@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(passport.initialize());
 
 // Rutas de autenticación
-app.use("/api/auth", require("./routes/auth"));
+app.use("/api", require("./routes/auth"));
 
 // Rutas de módulos básicos
 app.use("/api/editions", require("./routes/editions"));

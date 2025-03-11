@@ -3,12 +3,7 @@ const sequelize = require("../config/database");
 const Role = require("./Role");
 
 const User = sequelize.define("User", {
-    id: {
-        type: DataTypes.STRING,
-        primaryKey: true,
-        allowNull: false,
-        unique: true,
-    },
+    id: { type: DataTypes.STRING, primaryKey: true, allowNull: false, unique: true },
     email: { type: DataTypes.STRING, unique: true, allowNull: false },
     password: { type: DataTypes.STRING, allowNull: false },
     firstName: { type: DataTypes.STRING, allowNull: true },
@@ -20,13 +15,14 @@ const User = sequelize.define("User", {
     province: { type: DataTypes.STRING, allowNull: true },
     verified: { type: DataTypes.BOOLEAN, defaultValue: false },
     roleId: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: { model: "Roles", key: "id" },
-    },
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 2
+    }
 }, {
     timestamps: true,
 });
+
 
 User.belongsTo(Role, { foreignKey: "roleId" });
 

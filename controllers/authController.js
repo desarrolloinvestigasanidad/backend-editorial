@@ -1,4 +1,6 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+bcrypt.setRandomFallback((size) => crypto.randomBytes(size));
 const jwt = require("jsonwebtoken");
 const sendgrid = require("@sendgrid/mail");
 const User = require("../models/User");

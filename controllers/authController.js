@@ -15,7 +15,8 @@ exports.register = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "Este usuario ya está registrado" });
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(String(password), 10);
+
         const newUser = await User.create({ id, email, password: hashedPassword, firstName, lastName, phone, category, country, region, province, verified: false });
         const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
         const frontendVerificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;

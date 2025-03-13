@@ -15,6 +15,7 @@ exports.register = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "Este usuario ya está registrado" });
         }
+        console.log("Password recibido:", password, "Tipo:", typeof password);
         const hashedPassword = await bcrypt.hash(String(password), 10);
 
         const newUser = await User.create({ id, email, password: hashedPassword, firstName, lastName, phone, category, country, region, province, verified: false });
@@ -112,7 +113,8 @@ exports.handlePasswordReset = async (req, res) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const user = await User.findOne({ where: { id: decoded.id } });
             if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
-            user.password = await bcrypt.hash(newPassword, 10);
+            user.password = await bcrypt.hash(String(newPassword), 10);
+
             await user.save();
             return res.status(200).json({ message: "Contraseña actualizada correctamente." });
         }

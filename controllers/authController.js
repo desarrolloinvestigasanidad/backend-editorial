@@ -16,7 +16,9 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: "Este usuario ya está registrado" });
         }
         console.log("Password recibido:", password, "Tipo:", typeof password);
-        const hashedPassword = await bcrypt.hash(String(password), 10);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(String(password), salt);
+
 
         const newUser = await User.create({ id, email, password: hashedPassword, firstName, lastName, phone, category, country, region, province, verified: false });
         const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: "1h" });

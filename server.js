@@ -31,4 +31,6 @@ app.use("/api/invoices", require("./routes/invoices"));
 app.use("/api/certificates", require("./routes/certificates"));
 app.use("/api/panels", require("./routes/panels"));
 
-app.listen(5000, () => console.log("Servidor corriendo en puerto 5000"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+

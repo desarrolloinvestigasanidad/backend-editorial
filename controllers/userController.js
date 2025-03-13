@@ -9,3 +9,14 @@ exports.getUserProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+exports.getAllUsers = async (req, res) => {
+    try {
+        // Incluye el modelo Role si deseas obtener información adicional sobre el rol
+        const users = await User.findAll({
+            include: [{ association: 'Role' }] // Asegúrate de que la asociación esté definida
+        });
+        res.status(200).json(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

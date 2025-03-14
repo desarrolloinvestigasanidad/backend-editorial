@@ -27,7 +27,7 @@ exports.register = async (req, res) => {
         const frontendVerificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
         await sendgrid.send({
             to: email,
-            from: process.env.SENDGRID_FROM_EMAIL || "no-reply@tuapp.com",
+            from: process.env.SENDGRID_FROM_EMAIL,
             subject: "Verifica tu cuenta en Investiga Sanidad",
             html: `<p>Haz clic en el siguiente enlace para verificar tu cuenta:</p>
              <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
@@ -106,7 +106,7 @@ exports.handlePasswordReset = async (req, res) => {
             const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
             await sendgrid.send({
                 to: user.email,
-                from: process.env.SENDGRID_FROM_EMAIL || "no-reply@tuapp.com",
+                from: process.env.SENDGRID_FROM_EMAIL,
                 subject: "Recuperación de Contraseña",
                 html: `<p>Para restablecer tu contraseña, haz clic en el siguiente enlace:</p>
                <p><a href="${resetLink}">${resetLink}</a></p>

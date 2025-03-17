@@ -1,3 +1,4 @@
+// models/Chapter.js
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 const User = require("./User");
@@ -26,9 +27,11 @@ const Chapter = sequelize.define("Chapter", {
   timestamps: true,
 });
 
+// Relaciones con User y Book
 User.hasMany(Chapter, { foreignKey: "authorId" });
-Book.hasMany(Chapter, { foreignKey: "bookId" });
 Chapter.belongsTo(User, { foreignKey: "authorId" });
+
+Book.hasMany(Chapter, { foreignKey: "bookId" });
 Chapter.belongsTo(Book, { foreignKey: "bookId" });
 
 module.exports = Chapter;

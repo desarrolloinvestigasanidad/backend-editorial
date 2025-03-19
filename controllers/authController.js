@@ -9,7 +9,23 @@ sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.register = async (req, res) => {
     try {
-        const { id, email, password, firstName, lastName, phone, category, country, region, province } = req.body;
+        // Desestructuramos los campos actualizados
+        const {
+            id,
+            email,
+            password,
+            firstName,
+            lastName,
+            phone,
+            professionalCategory,
+            country,
+            autonomousCommunity,
+            province,
+            gender,
+            address,
+            interests
+        } = req.body;
+
         if (!id || !email || !password) {
             return res.status(400).json({ message: "DNI/NIE/Pasaporte, correo y contraseña son obligatorios." });
         }
@@ -21,8 +37,23 @@ exports.register = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(String(password), salt);
 
-
-        const newUser = await User.create({ id, email, password: hashedPassword, firstName, lastName, phone, category, country, region, province, verified: false });
+        // Creamos el usuario incluyendo los nuevos campos
+        const newUser = await User.create({
+            id,
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phone,
+            professionalCategory,
+            country,
+            autonomousCommunity,
+            province,
+            gender,
+            address,
+            interests,
+            verified: false
+        });
         const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
         const frontendVerificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
         await sendgrid.send({
@@ -30,8 +61,8 @@ exports.register = async (req, res) => {
             from: process.env.SENDGRID_FROM_EMAIL,
             subject: "Verifica tu cuenta en Investiga Sanidad",
             html: `<p>Haz clic en el siguiente enlace para verificar tu cuenta:</p>
-             <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
-             <p>Si no solicitaste esta verificación, ignora este correo.</p>`,
+                   <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
+                   <p>Si no solicitaste esta verificación, ignora este correo.</p>`,
         });
         res.status(201).json({ message: "Usuario registrado. Verifique su email.", token });
     } catch (err) {
@@ -83,13 +114,36 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
     try {
         const { id } = req.user;
-        const { firstName, lastName, phone, category, country, region, province } = req.body;
+        // Se actualizan los campos que ahora incluyen nuevos atributos
+        const {
+            firstName,
+            lastName,
+            phone,
+            professionalCategory,
+            country,
+            autonomousCommunity,
+            province,
+            gender,
+            address,
+            interests
+        } = req.body;
         if (!firstName || !lastName || !country) {
             return res.status(400).json({ message: "Nombre, apellidos y país son obligatorios." });
         }
         const user = await User.findOne({ where: { id } });
         if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
-        await user.update({ firstName, lastName, phone, category, country, region, province });
+        await user.update({
+            firstName,
+            lastName,
+            phone,
+            professionalCategory,
+            country,
+            autonomousCommunity,
+            province,
+            gender,
+            address,
+            interests
+        });
         res.status(200).json({ message: "Perfil actualizado con éxito", user });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -109,8 +163,8 @@ exports.handlePasswordReset = async (req, res) => {
                 from: process.env.SENDGRID_FROM_EMAIL,
                 subject: "Recuperación de Contraseña",
                 html: `<p>Para restablecer tu contraseña, haz clic en el siguiente enlace:</p>
-               <p><a href="${resetLink}">${resetLink}</a></p>
-               <p>Si no solicitaste este restablecimiento, ignora este correo.</p>`,
+                       <p><a href="${resetLink}">${resetLink}</a></p>
+                       <p>Si no solicitaste este restablecimiento, ignora este correo.</p>`,
             });
             return res.status(200).json({ message: "Correo de recuperación enviado." });
         } else if (token && newPassword) {
@@ -118,7 +172,6 @@ exports.handlePasswordReset = async (req, res) => {
             const user = await User.findOne({ where: { id: decoded.id } });
             if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
             user.password = await bcrypt.hash(String(newPassword), 10);
-
             await user.save();
             return res.status(200).json({ message: "Contraseña actualizada correctamente." });
         }

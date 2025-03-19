@@ -3,14 +3,33 @@ const Book = require("../models/Book");
 const Edition = require("../models/Edition");
 const Chapter = require("../models/Chapter");
 
+// ========================
+// Libros en Edición
+// ========================
+
 // Crear un libro dentro de una edición
 exports.createBookForEdition = async (req, res) => {
     try {
         const { id: editionId } = req.params; // "id" es editionId
-        const { title, authorId, category, price } = req.body;
+        // Se esperan los campos nuevos; los que sean obligatorios los validamos (por ejemplo, title, authorId y price)
+        const {
+            title,
+            subtitle,
+            bookType,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            isbn,
+            interests,
+            price,
+            status,
+            active,
+            authorId
+        } = req.body;
 
         if (!title || !authorId || !price) {
-            return res.status(400).json({ message: "Campos obligatorios faltantes." });
+            return res.status(400).json({ message: "Título, autor y precio son obligatorios." });
         }
 
         // Verificar que la edición exista
@@ -19,13 +38,22 @@ exports.createBookForEdition = async (req, res) => {
             return res.status(404).json({ message: "Edición no encontrada." });
         }
 
-        // Crear libro con editionId
+        // Crear libro con editionId y demás campos
         const newBook = await Book.create({
             editionId,
             title,
-            authorId,
-            category,
+            subtitle: subtitle || null,
+            bookType: bookType || "libro edición", // valor por defecto
+            cover: cover || null,
+            openDate: openDate || null,
+            deadlineChapters: deadlineChapters || null,
+            publishDate: publishDate || null,
+            isbn: isbn || null,
+            interests: interests || null,
             price,
+            status: status || "desarrollo",
+            active: active !== undefined ? active : true,
+            authorId,
         });
 
         res.status(201).json({ message: "Libro creado en la edición.", book: newBook });
@@ -65,12 +93,39 @@ exports.getOneBookFromEdition = async (req, res) => {
 exports.updateBookFromEdition = async (req, res) => {
     try {
         const { id: editionId, bookId } = req.params;
-        const { title, category, price, status } = req.body;
+        // Se actualizan los campos correspondientes; no olvides que estos pueden incluir los nuevos
+        const {
+            title,
+            subtitle,
+            bookType,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            isbn,
+            interests,
+            price,
+            status,
+            active
+        } = req.body;
 
         const book = await Book.findOne({ where: { id: bookId, editionId } });
         if (!book) return res.status(404).json({ message: "Libro no encontrado en esta edición." });
 
-        await book.update({ title, category, price, status });
+        await book.update({
+            title,
+            subtitle,
+            bookType,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            isbn,
+            interests,
+            price,
+            status,
+            active
+        });
         res.status(200).json({ message: "Libro actualizado.", book });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -94,22 +149,55 @@ exports.deleteBookFromEdition = async (req, res) => {
 // ========================
 // Capítulos anidados
 // ========================
+
+// Crear un capítulo dentro de un libro de una edición
 exports.createChapterForBook = async (req, res) => {
     try {
         const { id: editionId, bookId } = req.params;
-        const { title, content, authorId } = req.body;
+        // Se esperan los campos nuevos, incluyendo 'methodology'
+        const {
+            title,
+            studyType,
+            methodology,
+            introduction,
+            objectives,
+            results,
+            discussion,
+            bibliography,
+            authorId,
+        } = req.body;
 
-        if (!title || !content || !authorId) {
-            return res.status(400).json({ message: "Faltan campos obligatorios." });
+        // Validación de campos obligatorios
+        if (
+            !title ||
+            !studyType ||
+            !methodology ||
+            !introduction ||
+            !objectives ||
+            !results ||
+            !discussion ||
+            !bibliography ||
+            !authorId
+        ) {
+            return res.status(400).json({ message: "Faltan campos obligatorios para el capítulo." });
         }
 
         // Verificar que el libro existe y pertenece a la edición
         const book = await Book.findOne({ where: { id: bookId, editionId } });
-        if (!book) return res.status(404).json({ message: "Libro no encontrado en esta edición." });
+        if (!book) {
+            return res.status(404).json({ message: "Libro no encontrado en esta edición." });
+        }
 
+        // Crear capítulo con los campos correspondientes
         const newChapter = await Chapter.create({
             title,
-            content,
+            studyType,
+            methodology,
+            introduction,
+            objectives,
+            results,
+            discussion,
+            bibliography,
             authorId,
             bookId: book.id,
         });
@@ -120,6 +208,7 @@ exports.createChapterForBook = async (req, res) => {
     }
 };
 
+// Listar capítulos de un libro
 exports.getChaptersForBook = async (req, res) => {
     try {
         const { id: editionId, bookId } = req.params;
@@ -133,6 +222,7 @@ exports.getChaptersForBook = async (req, res) => {
     }
 };
 
+// Obtener un capítulo concreto
 exports.getOneChapter = async (req, res) => {
     try {
         const { id: editionId, bookId, chapterId } = req.params;
@@ -148,24 +238,49 @@ exports.getOneChapter = async (req, res) => {
     }
 };
 
+// Actualizar un capítulo
 exports.updateChapter = async (req, res) => {
     try {
         const { id: editionId, bookId, chapterId } = req.params;
-        const { title, content, status } = req.body;
+        // Incluir 'methodology' si se desea actualizar también ese campo
+        const {
+            title,
+            studyType,
+            methodology,
+            introduction,
+            objectives,
+            results,
+            discussion,
+            bibliography,
+            status,
+        } = req.body;
 
+        // Verificar que el libro exista en la edición
         const book = await Book.findOne({ where: { id: bookId, editionId } });
         if (!book) return res.status(404).json({ message: "Libro no encontrado." });
 
+        // Verificar que el capítulo exista y pertenezca al libro
         const chapter = await Chapter.findOne({ where: { id: chapterId, bookId: book.id } });
         if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
 
-        await chapter.update({ title, content, status });
+        await chapter.update({
+            title,
+            studyType,
+            methodology,
+            introduction,
+            objectives,
+            results,
+            discussion,
+            bibliography,
+            status,
+        });
         res.status(200).json({ message: "Capítulo actualizado.", chapter });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
+// Eliminar un capítulo
 exports.deleteChapter = async (req, res) => {
     try {
         const { id: editionId, bookId, chapterId } = req.params;

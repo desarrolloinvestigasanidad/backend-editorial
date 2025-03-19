@@ -1,18 +1,44 @@
-// controllers/editionController.js
 const Edition = require("../models/Edition");
 
+// Crear una edición
 exports.createEdition = async (req, res) => {
     try {
-        const { name, description } = req.body;
-        if (!name) return res.status(400).json({ message: "El nombre es obligatorio." });
+        // Extraemos los campos nuevos
+        const {
+            title,
+            subtitle,
+            year,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            normativa,
+            description
+        } = req.body;
 
-        const newEdition = await Edition.create({ name, description });
+        if (!title) {
+            return res.status(400).json({ message: "El título es obligatorio." });
+        }
+
+        const newEdition = await Edition.create({
+            title,
+            subtitle: subtitle || null,
+            year: year || null,
+            cover: cover || null,
+            openDate: openDate || null,
+            deadlineChapters: deadlineChapters || null,
+            publishDate: publishDate || null,
+            normativa: normativa || null,
+            description: description || null
+        });
+
         res.status(201).json({ message: "Edición creada.", edition: newEdition });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
+// Listar todas las ediciones
 exports.getEditions = async (req, res) => {
     try {
         const editions = await Edition.findAll();
@@ -22,6 +48,7 @@ exports.getEditions = async (req, res) => {
     }
 };
 
+// Obtener una edición en específico
 exports.getEdition = async (req, res) => {
     try {
         const { id } = req.params;
@@ -33,21 +60,43 @@ exports.getEdition = async (req, res) => {
     }
 };
 
+// Actualizar una edición
 exports.updateEdition = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description } = req.body;
+        const {
+            title,
+            subtitle,
+            year,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            normativa,
+            description
+        } = req.body;
 
         const edition = await Edition.findByPk(id);
         if (!edition) return res.status(404).json({ message: "Edición no encontrada." });
 
-        await edition.update({ name, description });
+        await edition.update({
+            title,
+            subtitle,
+            year,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            normativa,
+            description
+        });
         res.status(200).json({ message: "Edición actualizada.", edition });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
+// Eliminar una edición
 exports.deleteEdition = async (req, res) => {
     try {
         const { id } = req.params;

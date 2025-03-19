@@ -10,24 +10,66 @@ const Chapter = sequelize.define("Chapter", {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  title: { type: DataTypes.STRING, allowNull: false },
-  content: { type: DataTypes.TEXT, allowNull: false },
+  code: {
+    // Código de capítulo
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  studyType: {
+    // tipo de estudio
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  methodology: {
+    // Campo adicional (metodología)
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  introduction: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  objectives: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  results: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  discussion: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  bibliography: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+  status: {
+    // borrador, pendiente, aprobado, rechazado, eliminado
+    type: DataTypes.ENUM("borrador", "pendiente", "aprobado", "rechazado", "eliminado"),
+    defaultValue: "borrador",
+  },
   bookId: {
     type: DataTypes.UUID,
     allowNull: false,
     references: { model: "Books", key: "id" },
   },
+  // autor principal
   authorId: {
     type: DataTypes.STRING,
     allowNull: false,
     references: { model: "Users", key: "id" },
   },
-  status: { type: DataTypes.STRING, defaultValue: "pending" },
 }, {
   timestamps: true,
 });
 
-// Relaciones con User y Book
+// Relaciones
 User.hasMany(Chapter, { foreignKey: "authorId" });
 Chapter.belongsTo(User, { foreignKey: "authorId" });
 

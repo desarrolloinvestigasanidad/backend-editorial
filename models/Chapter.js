@@ -67,6 +67,8 @@ const Chapter = sequelize.define("Chapter", {
   },
 }, {
   timestamps: true,
+  tableName: "chapters",
+  freezeTableName: true,
 });
 
 // Relaciones

@@ -46,7 +46,7 @@ const Edition = sequelize.define("Edition", {
 }, {
     timestamps: true,
     freezeTableName: true, // Evita la pluralización automática
-    tableName: "edition"  // Especifica el nombre exacto de la tabla en minúsculas
+    tableName: "editions"  // Especifica el nombre exacto de la tabla en minúsculas
 });
 
 module.exports = Edition;

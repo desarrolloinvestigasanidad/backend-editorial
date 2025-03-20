@@ -39,7 +39,7 @@ app.use("/api/certificates", require("./routes/certificates"));
 app.use("/api/panels", require("./routes/panels"));
 
 const checkoutRouter = require("./routes/checkout");
-app.use("/create-checkout-session", checkoutRouter);
+app.use("/api/create-checkout-session", checkoutRouter);
 
 // Endpoint de Check
 app.get("/", (req, res) => {

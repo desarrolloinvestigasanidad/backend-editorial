@@ -9,7 +9,7 @@ sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.register = async (req, res) => {
     try {
-        // Desestructuramos los campos actualizados
+        // Extraemos los campos nuevos y los anteriores del body
         const {
             id,
             email,
@@ -18,26 +18,31 @@ exports.register = async (req, res) => {
             lastName,
             phone,
             professionalCategory,
+            gender,
+            address,
+            interests,
             country,
             autonomousCommunity,
             province,
-            gender,
-            address,
-            interests
+            termsAccepted,  // se espera que venga como boolean (true/false)
+            infoAccepted    // se espera que venga como boolean (true/false)
         } = req.body;
 
         if (!id || !email || !password) {
-            return res.status(400).json({ message: "DNI/NIE/Pasaporte, correo y contraseña son obligatorios." });
+            return res.status(400).json({ message: "El identificador, correo y contraseña son obligatorios." });
         }
+
+        // Verificar si ya existe el usuario
         const existingUser = await User.findOne({ where: { id } });
         if (existingUser) {
             return res.status(400).json({ message: "Este usuario ya está registrado" });
         }
-        console.log("Password recibido:", password, "Tipo:", typeof password);
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(String(password), salt);
 
-        // Creamos el usuario incluyendo los nuevos campos
+        // Crear el usuario incluyendo los nuevos campos.
+        // Se fuerza que termsAccepted e infoAccepted sean true (o 1) si se han aceptado, y se establece state como "active".
         const newUser = await User.create({
             id,
             email,
@@ -46,14 +51,20 @@ exports.register = async (req, res) => {
             lastName,
             phone,
             professionalCategory,
-            country,
-            autonomousCommunity,
-            province,
             gender,
             address,
             interests,
-            verified: false
+            country,
+            autonomousCommunity,
+            province,
+            termsAccepted: termsAccepted ? true : false,
+            infoAccepted: infoAccepted ? true : false,
+            state: "active",
+            verified: false,
+            roleId: 2
         });
+
+        // Enviar correo de verificación
         const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
         const frontendVerificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
         await sendgrid.send({
@@ -61,9 +72,10 @@ exports.register = async (req, res) => {
             from: process.env.SENDGRID_FROM_EMAIL,
             subject: "Verifica tu cuenta en Investiga Sanidad",
             html: `<p>Haz clic en el siguiente enlace para verificar tu cuenta:</p>
-                   <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
-                   <p>Si no solicitaste esta verificación, ignora este correo.</p>`,
+               <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
+               <p>Si no solicitaste esta verificación, ignora este correo.</p>`
         });
+
         res.status(201).json({ message: "Usuario registrado. Verifique su email.", token });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -95,7 +107,7 @@ exports.login = async (req, res) => {
         if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
         if (!user.verified) return res.status(401).json({ message: "Cuenta no verificada. Revise su email." });
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
-        res.json({ message: "Inicio de sesión exitoso", token });
+        res.json({ message: "Inicio de sesión exitoso", token, roleId: user.roleId });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

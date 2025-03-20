@@ -7,6 +7,12 @@ require("./config/passport");
 const app = express();
 
 app.use(cors());
+
+const webhookRouter = require("./routes/webhook");
+app.use("/webhook", webhookRouter);
+
+
+
 app.use(express.json());
 app.use(passport.initialize());
 
@@ -22,6 +28,8 @@ app.use("/api/roles", require("./routes/roles"));
 app.use("/api/templates", require("./routes/templates"));
 app.use("/api/config", require("./routes/config"));
 app.use("/api/users", require("./routes/users"));
+app.use("/api/publications", require("./routes/publications"));
+
 
 // Rutas de funcionalidades adicionales
 app.use("/api/coauthors", require("./routes/coauthors"));
@@ -29,6 +37,9 @@ app.use("/api/pdf", require("./routes/pdf"));
 app.use("/api/invoices", require("./routes/invoices"));
 app.use("/api/certificates", require("./routes/certificates"));
 app.use("/api/panels", require("./routes/panels"));
+
+const checkoutRouter = require("./routes/checkout");
+app.use("/create-checkout-session", checkoutRouter);
 
 // Endpoint de Check
 app.get("/", (req, res) => {

@@ -70,7 +70,7 @@ const Book = sequelize.define("Book", {
   // Autor principal
   authorId: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     references: { model: "Users", key: "id" },
   },
   // Relación con edición (puede ser null si es libro propio)

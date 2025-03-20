@@ -38,7 +38,7 @@ router.put("/:id/books/:bookId", updateBookFromEdition);
 router.delete("/:id/books/:bookId", deleteBookFromEdition);
 
 // Capítulos dentro de un libro de una edición
-router.post("/:id/books/:bookId/chapters", createChapterForBook);
+router.post("/:editionId/books/:bookId/chapters", createChapterForBook);
 router.get("/:id/books/:bookId/chapters", getChaptersForBook);
 router.get("/:id/books/:bookId/chapters/:chapterId", getOneChapter);
 router.put("/:id/books/:bookId/chapters/:chapterId", updateChapter);

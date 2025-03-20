@@ -1,4 +1,3 @@
-// models/Edition.js
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 
@@ -21,22 +20,18 @@ const Edition = sequelize.define("Edition", {
         allowNull: true,
     },
     cover: {
-        // Archivo/URL de la portada
         type: DataTypes.STRING,
         allowNull: true,
     },
     openDate: {
-        // fecha de apertura
         type: DataTypes.DATE,
         allowNull: true,
     },
     deadlineChapters: {
-        // fecha máxima de envío de capítulos
         type: DataTypes.DATE,
         allowNull: true,
     },
     publishDate: {
-        // fecha de publicación
         type: DataTypes.DATE,
         allowNull: true,
     },
@@ -45,12 +40,13 @@ const Edition = sequelize.define("Edition", {
         allowNull: true,
     },
     description: {
-        // Podrías mantener un campo de descripción adicional
         type: DataTypes.TEXT,
         allowNull: true,
     },
 }, {
     timestamps: true,
+    freezeTableName: true, // Evita la pluralización automática
+    tableName: "edition"  // Especifica el nombre exacto de la tabla en minúsculas
 });
 
 module.exports = Edition;

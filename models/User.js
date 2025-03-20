@@ -5,7 +5,7 @@ const Role = require("./Role");
 
 const User = sequelize.define("User", {
     // Se asume que 'id' será un identificador interno. 
-    // Si prefieres que sea el propio DNI/NIE/Pasaporte, ajusta la lógica de 'id' y 'dni'.
+
     id: {
         type: DataTypes.STRING,
         primaryKey: true,

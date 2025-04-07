@@ -293,7 +293,19 @@ exports.deleteChapter = async (req, res) => {
 // Función para obtener todos los libros
 exports.getAllBooks = async (req, res) => {
     try {
-        const books = await Book.findAll();
+        let books;
+        // Si se pasa el query parameter userId, filtra por ese autor y por libros propios
+        if (req.query.userId) {
+            books = await Book.findAll({
+                where: {
+                    authorId: req.query.userId,
+                    bookType: "libro propio"
+                }
+            });
+        } else {
+            // Sino, retorna todos los libros
+            books = await Book.findAll();
+        }
         res.status(200).json(books);
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -50,9 +50,15 @@ exports.createPayment = async (req, res) => {
 
 exports.getPayments = async (req, res) => {
     try {
-        const payments = await Payment.findAll();
+        let payments;
+        if (req.query.userId) {
+            payments = await Payment.findAll({ where: { userId: req.query.userId } });
+        } else {
+            payments = await Payment.findAll();
+        }
         res.status(200).json(payments);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
+

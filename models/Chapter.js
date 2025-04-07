@@ -59,6 +59,11 @@ const Chapter = sequelize.define("Chapter", {
     allowNull: false,
     references: { model: "Books", key: "id" },
   },
+  editionId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: { model: "Editions", key: "id" },
+  },
   // autor principal
   authorId: {
     type: DataTypes.STRING,

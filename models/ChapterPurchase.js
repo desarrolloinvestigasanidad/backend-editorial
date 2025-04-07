@@ -1,44 +1,38 @@
-"use strict";
+const { Model, DataTypes } = require("sequelize");
+const sequelize = require("../config/database"); // Asegurate de tener configurada la conexión
 
-module.exports = {
-    async up(queryInterface, Sequelize) {
-        await queryInterface.createTable("chapter_purchases", {
-            id: {
-                allowNull: false,
-                primaryKey: true,
-                type: Sequelize.UUID,
-                defaultValue: Sequelize.literal('UUID()'),
-            },
-            userId: {
-                type: Sequelize.STRING,
-                allowNull: false,
-            },
-            editionId: {
-                type: Sequelize.UUID,
-                allowNull: false,
-            },
-            chapterCount: {
-                type: Sequelize.INTEGER,
-                allowNull: false,
-            },
-            amountCharged: {
-                type: Sequelize.DECIMAL(10, 2),
-                allowNull: false,
-            },
-            createdAt: {
-                allowNull: false,
-                type: Sequelize.DATE,
-                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
-            },
-            updatedAt: {
-                allowNull: false,
-                type: Sequelize.DATE,
-                defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
-            },
-        });
-    },
+class ChapterPurchase extends Model { }
 
-    async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable("chapter_purchases");
+ChapterPurchase.init(
+    {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true,
+        },
+        userId: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        editionId: {
+            type: DataTypes.UUID,
+            allowNull: false,
+        },
+        chapterCount: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        amountCharged: {
+            type: DataTypes.DECIMAL(10, 2),
+            allowNull: false,
+        },
     },
-};
+    {
+        sequelize,
+        modelName: "ChapterPurchase",
+        tableName: "chapter_purchases",
+        timestamps: true,
+    }
+);
+
+module.exports = ChapterPurchase;

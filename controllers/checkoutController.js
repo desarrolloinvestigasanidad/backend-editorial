@@ -47,8 +47,8 @@ exports.createCheckoutSession = async (req, res) => {
                 },
             ],
             mode: "payment",
-            success_url: "http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url: "http://localhost:3000/cancel",
+            success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL}/cancel`,
             metadata: {
                 userId,
                 bookTitle,

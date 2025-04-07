@@ -22,12 +22,15 @@ app.use("/api", require("./routes/auth"));
 // Rutas de módulos básicos y funcionalidades principales
 // La ruta de ediciones ahora incluye libros y capítulos anidados.
 app.use("/api/editions", require("./routes/editions"));
+app.use("/api/books", require("./routes/books"));
+app.use("/api/chapters", require("./routes/chapters"));
 app.use("/api/payments", require("./routes/payments"));
 app.use("/api/discounts", require("./routes/discounts"));
 app.use("/api/roles", require("./routes/roles"));
 app.use("/api/templates", require("./routes/templates"));
 app.use("/api/config", require("./routes/config"));
 app.use("/api/users", require("./routes/users"));
+app.use("/api/clients", require("./routes/clients"));
 app.use("/api/publications", require("./routes/publications"));
 
 

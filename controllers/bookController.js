@@ -201,7 +201,6 @@ exports.createChapterForBook = async (req, res) => {
     }
 };
 
-
 // Listar capítulos de un libro
 exports.getChaptersForBook = async (req, res) => {
     try {
@@ -291,13 +290,92 @@ exports.deleteChapter = async (req, res) => {
     }
 };
 
-
-//Obtener todos los libros de mi BBDD
-// controllers/bookController.js
+// Función para obtener todos los libros
 exports.getAllBooks = async (req, res) => {
     try {
         const books = await Book.findAll();
         res.status(200).json(books);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Función para obtener un libro propio por su id
+exports.getOneBook = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+        const book = await Book.findByPk(bookId);
+        if (!book) return res.status(404).json({ message: "Libro no encontrado." });
+        res.status(200).json(book);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Función para crear un libro propio
+exports.createBook = async (req, res) => {
+    try {
+        const { title, subtitle, price, isbn, cover, openDate, deadlineChapters, publishDate, interests } = req.body;
+        if (!title || !price) {
+            return res.status(400).json({ message: "Campos obligatorios faltantes: título y precio." });
+        }
+        const newBook = await Book.create({
+            editionId: null,
+            title,
+            subtitle: subtitle || null,
+            price: Number(price),
+            isbn: isbn && isbn.trim() !== "" ? isbn : null,
+            cover: cover || null,
+            openDate: openDate || null,
+            deadlineChapters: deadlineChapters || null,
+            publishDate: publishDate || null,
+            interests: interests || null,
+            bookType: "libro propio",
+            status: "desarrollo",
+            active: true,
+            authorId: null,
+        });
+        res.status(201).json({ message: "Libro propio creado.", book: newBook });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Función para actualizar un libro propio
+exports.updateBook = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+        const { title, subtitle, bookType, cover, openDate, deadlineChapters, publishDate, isbn, interests, price, status, active } = req.body;
+        const book = await Book.findByPk(bookId);
+        if (!book) return res.status(404).json({ message: "Libro no encontrado." });
+        await book.update({
+            title,
+            subtitle,
+            bookType,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            isbn,
+            interests,
+            price,
+            status,
+            active,
+        });
+        res.status(200).json({ message: "Libro actualizado.", book });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Función para eliminar un libro propio
+exports.deleteBook = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+        const book = await Book.findByPk(bookId);
+        if (!book) return res.status(404).json({ message: "Libro no encontrado." });
+        await book.destroy();
+        res.status(200).json({ message: "Libro eliminado." });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

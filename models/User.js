@@ -101,6 +101,6 @@ const User = sequelize.define("User", {
 });
 
 // Relación con Roles
-User.belongsTo(Role, { foreignKey: "roleId" });
+User.belongsTo(Role, { foreignKey: "roleId", as: "role" });
 
 module.exports = User;

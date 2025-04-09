@@ -13,23 +13,53 @@ const Discount = sequelize.define("Discount", {
         allowNull: false,
         unique: true,
     },
-    percentage: {
-        type: DataTypes.DECIMAL(5, 2),
+    // Tipo de descuento (porcentaje vs monto fijo)
+    discountType: {
+        type: DataTypes.ENUM("percentage", "fixed"),
+        defaultValue: "percentage",
+    },
+    // Valor: si es "percentage" se interpretará como %, si es "fixed", como valor en €
+    value: {
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
     },
+    // Importe mínimo
+    minimumPrice: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+    },
+    // Máximo de usos
+    maxUses: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+    },
+    // Veces que se ha utilizado
+    timesUsed: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+    },
+    // Fecha de inicio
+    startDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    // Fecha de fin
+    endDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    // Observaciones
+    notes: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
+    // Campos existentes
     appliesToAllEditions: {
-        // Si es true, aplica a cualquier edición
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
     editionId: {
-        // Si aplica a una edición concreta
         type: DataTypes.UUID,
-        allowNull: true,
-    },
-    minimumPrice: {
-        // precio mínimo para que el descuento sea válido
-        type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
     },
     expirationDate: {
@@ -37,7 +67,6 @@ const Discount = sequelize.define("Discount", {
         allowNull: true,
     },
     applyToOwnBook: {
-        // True si aplica a la creación de un libro propio
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },

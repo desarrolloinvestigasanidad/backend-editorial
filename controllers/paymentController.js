@@ -51,6 +51,7 @@ exports.createPayment = async (req, res) => {
 exports.getPayments = async (req, res) => {
     try {
         let payments;
+        // Si se pasa el query parameter userId, filtra los pagos correspondientes
         if (req.query.userId) {
             payments = await Payment.findAll({ where: { userId: req.query.userId } });
         } else {

@@ -84,6 +84,10 @@ const User = sequelize.define("User", {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
     },
+    deviceIp: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     state: {
         // Estado del cliente/usuario: activo, bloqueado, etc.
         type: DataTypes.STRING,

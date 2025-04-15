@@ -9,7 +9,7 @@ sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.register = async (req, res) => {
     try {
-        // Extraemos los campos nuevos y los anteriores del body
+        // Extraemos los campos nuevos y anteriores del body, incluyendo deviceIp y usando infoAccepted para el envío de comunicaciones
         const {
             id,
             email,
@@ -25,7 +25,8 @@ exports.register = async (req, res) => {
             autonomousCommunity,
             province,
             termsAccepted,  // se espera que venga como boolean (true/false)
-            infoAccepted    // se espera que venga como boolean (true/false)
+            infoAccepted,   // se espera que venga como boolean (true/false), indica el consentimiento para comunicaciones
+            deviceIp        // IP del dispositivo del usuario
         } = req.body;
 
         if (!id || !email || !password) {
@@ -42,7 +43,8 @@ exports.register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(String(password), salt);
 
         // Crear el usuario incluyendo los nuevos campos.
-        // Se fuerza que termsAccepted e infoAccepted sean true (o 1) si se han aceptado, y se establece state como "active".
+        // Se fuerza que termsAccepted e infoAccepted sean true si se han aceptado,
+        // y se almacena la IP solo si el usuario aceptó recibir comunicaciones (infoAccepted === true)
         const newUser = await User.create({
             id,
             email,
@@ -59,6 +61,7 @@ exports.register = async (req, res) => {
             province,
             termsAccepted: termsAccepted ? true : false,
             infoAccepted: infoAccepted ? true : false,
+            deviceIp: infoAccepted ? deviceIp : null,
             state: "active",
             verified: false,
             roleId: 2
@@ -72,8 +75,8 @@ exports.register = async (req, res) => {
             from: process.env.SENDGRID_FROM_EMAIL,
             subject: "Verifica tu cuenta en Investiga Sanidad",
             html: `<p>Haz clic en el siguiente enlace para verificar tu cuenta:</p>
-               <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
-               <p>Si no solicitaste esta verificación, ignora este correo.</p>`
+                   <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
+                   <p>Si no solicitaste esta verificación, ignora este correo.</p>`
         });
 
         res.status(201).json({ message: "Usuario registrado. Verifique su email.", token });
@@ -81,6 +84,7 @@ exports.register = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 
 exports.verifyEmail = async (req, res) => {
     try {

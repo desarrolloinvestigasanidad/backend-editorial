@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
             address,
             interests,
             country,
-            autonomousCommunity,
+            autonomousCommunity,  // se espera que venga como array (por el multi-select)
             province,
             termsAccepted,  // se espera que venga como boolean (true/false)
             infoAccepted,   // se espera que venga como boolean (true/false), indica el consentimiento para comunicaciones
@@ -42,6 +42,11 @@ exports.register = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(String(password), salt);
 
+        // Convertimos el array de comunidades a una cadena separada por comas
+        const autonomousCommunityString = Array.isArray(autonomousCommunity)
+            ? autonomousCommunity.join(", ")
+            : autonomousCommunity;
+
         // Crear el usuario incluyendo los nuevos campos.
         // Se fuerza que termsAccepted e infoAccepted sean true si se han aceptado,
         // y se almacena la IP solo si el usuario aceptó recibir comunicaciones (infoAccepted === true)
@@ -57,7 +62,7 @@ exports.register = async (req, res) => {
             address,
             interests,
             country,
-            autonomousCommunity,
+            autonomousCommunity: autonomousCommunityString, // Guardamos como cadena
             province,
             termsAccepted: termsAccepted ? true : false,
             infoAccepted: infoAccepted ? true : false,
@@ -84,6 +89,7 @@ exports.register = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
 
 
 exports.verifyEmail = async (req, res) => {

@@ -73,7 +73,7 @@ exports.register = async (req, res) => {
         });
 
         // Enviar correo de verificación
-        const token = jwt.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign({ sub: newUser.id, roleId: newUser.roleId }, process.env.JWT_SECRET, { expiresIn: "1h" });
         const frontendVerificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
         await sendgrid.send({
             to: email,
@@ -101,7 +101,7 @@ exports.verifyEmail = async (req, res) => {
         if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
         user.verified = true;
         await user.save();
-        const newToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
+        const newToken = jwt.sign({ sub: newUser.id, roleId: newUser.roleId }, process.env.JWT_SECRET, { expiresIn: "24h" });
         res.status(200).json({ message: "Cuenta verificada correctamente.", token: newToken });
     } catch (err) {
         res.status(500).json({ error: "Token inválido o expirado." });
@@ -116,7 +116,8 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
         if (!user.verified) return res.status(401).json({ message: "Cuenta no verificada. Revise su email." });
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
+        const token = jwt.sign({ id: user.id, sub: user.id, roleId: user.roleId }
+            , process.env.JWT_SECRET, { expiresIn: "24h" });
         res.json({ message: "Inicio de sesión exitoso", token, roleId: user.roleId });
     } catch (err) {
         res.status(500).json({ error: err.message });

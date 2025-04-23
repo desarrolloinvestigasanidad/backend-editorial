@@ -19,6 +19,8 @@ app.use(passport.initialize());
 // Rutas de autenticación
 app.use("/api", require("./routes/auth"));
 
+app.use("/api/admin", require("./routes/admin"));
+
 // Rutas de módulos básicos y funcionalidades principales
 // La ruta de ediciones ahora incluye libros y capítulos anidados.
 app.use("/api/editions", require("./routes/editions"));

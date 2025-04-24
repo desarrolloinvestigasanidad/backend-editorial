@@ -63,3 +63,14 @@ exports.getPayments = async (req, res) => {
     }
 };
 
+exports.getPaymentById = async (req, res) => {
+    try {
+        const payment = await Payment.findByPk(req.params.id);      // Sequelize
+        if (!payment) {
+            return res.status(404).json({ message: "Pago no encontrado." });
+        }
+        res.status(200).json(payment);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

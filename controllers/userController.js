@@ -26,6 +26,7 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
+
 // Nuevo método para crear usuario
 exports.createUser = async (req, res) => {
     try {
@@ -78,6 +79,20 @@ exports.createUser = async (req, res) => {
         });
 
         res.status(201).json({ message: "Usuario creado correctamente.", user: newUser });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+// controllers/userController.js
+exports.getUserById = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id, {
+            include: [{ model: Role, as: "role" }],
+        });
+        if (!user) {
+            return res.status(404).json({ message: "Usuario no encontrado." });
+        }
+        res.status(200).json(user);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

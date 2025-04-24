@@ -3,6 +3,15 @@ const Book = require("../models/Book");
 const Edition = require("../models/Edition");
 const Chapter = require("../models/Chapter");
 
+const fs = require("fs");
+const path = require("path");
+const PDFKit = require("pdfkit");
+const hbs = require("handlebars");
+
+const toPlain = obj =>
+    Array.isArray(obj)
+        ? obj.map(i => (i?.get ? i.get({ plain: true }) : i))
+        : obj?.get ? obj.get({ plain: true }) : obj;
 // ========================
 // Libros en Edición
 // ========================
@@ -204,14 +213,22 @@ exports.createChapterForBook = async (req, res) => {
 // Listar capítulos de un libro
 exports.getChaptersForBook = async (req, res) => {
     try {
-        const { id: editionId, bookId } = req.params;
-        const book = await Book.findOne({ where: { id: bookId, editionId } });
-        if (!book) return res.status(404).json({ message: "Libro no encontrado en esta edición." });
 
-        const chapters = await Chapter.findAll({ where: { bookId: book.id } });
-        res.status(200).json(chapters);
+        const { id: editionId, bookId } = req.params;       // editionId SOLO existe si venimos de /editions
+
+        // Construimos dinámicamente el filtro
+        const whereBook = { id: bookId };
+        if (editionId !== undefined) whereBook.editionId = editionId; // sólo lo añadimos si está
+
+        const book = await Book.findOne({ where: whereBook });
+
+        if (!book)
+            return res.status(404).json({ message: "Libro no encontrado." });
+
+        const chapters = await Chapter.findAll({ where: { bookId } });
+        return res.status(200).json(chapters);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
 };
 
@@ -390,5 +407,71 @@ exports.deleteBook = async (req, res) => {
         res.status(200).json({ message: "Libro eliminado." });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+};
+exports.generateBook = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+
+        /* 1️⃣  Recuperar libro y capítulos */
+        const bookInstance = await Book.findByPk(bookId);
+        if (!bookInstance) {
+            return res.status(404).json({ message: "Libro no encontrado." });
+        }
+        const chaptersInstances = await Chapter.findAll({
+            where: { bookId },
+            order: [["createdAt", "ASC"]],
+        });
+        if (chaptersInstances.length === 0) {
+            return res.status(400).json({ message: "El libro no tiene capítulos." });
+        }
+
+        /* 2️⃣  Preparar datos “plain” */
+        const book = bookInstance.get({ plain: true });
+        const chapters = chaptersInstances.map((ch) => ch.get({ plain: true }));
+
+        /* 3️⃣  Generar PDF */
+        const pdfName = `book_${bookId}.pdf`;
+        ensureDir(publicDir);
+        const pdfPath = path.join(publicDir, pdfName);
+
+        const doc = new PDFKit({ size: "A4", margin: 50 });
+        const fileStream = fs.createWriteStream(pdfPath);
+        doc.pipe(fileStream);
+
+        // Portada
+        doc.fontSize(28).text(book.title, { align: "center" });
+        if (book.subtitle) {
+            doc.moveDown().fontSize(18).text(book.subtitle, { align: "center" });
+        }
+        doc.addPage();
+
+        // Capítulos
+        chapters.forEach((ch, i) => {
+            doc.fontSize(18).text(`${i + 1}. ${ch.title}`, { underline: true });
+            doc.moveDown().fontSize(12);
+
+            doc.text(`Tipo de estudio: ${ch.studyType}`).moveDown(0.5);
+            doc.text("Metodología").text(ch.methodology).moveDown();
+            doc.text("Introducción").text(ch.introduction).moveDown();
+            doc.text("Objetivos").text(ch.objectives).moveDown();
+            doc.text("Resultados").text(ch.results).moveDown();
+            doc.text("Discusión").text(ch.discussion).moveDown();
+            doc.text("Bibliografía").text(ch.bibliography).moveDown();
+
+            if (i < chapters.length - 1) doc.addPage();
+        });
+
+        doc.end();
+
+        /* 4️⃣  Devolver la URL cuando el PDF esté escrito */
+        fileStream.on("finish", () => {
+            const host = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+            const url = `${host}/generated/${pdfName}`;
+            res.status(200).json({ url });
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error al generar el libro." });
     }
 };

@@ -3,6 +3,7 @@ const cors = require("cors");
 const passport = require("passport");
 require("dotenv").config();
 require("./config/passport");
+const path = require("path");
 
 const app = express();
 
@@ -15,6 +16,8 @@ app.use("/webhook", webhookRouter);
 
 app.use(express.json());
 app.use(passport.initialize());
+
+app.use("/generated", express.static(path.join(__dirname, "public", "generated")));
 
 // Rutas de autenticación
 app.use("/api", require("./routes/auth"));
@@ -44,6 +47,7 @@ app.use("/api/certificates", require("./routes/certificates"));
 app.use("/api/panels", require("./routes/panels"));
 
 const checkoutRouter = require("./routes/checkout");
+
 app.use("/api/create-checkout-session", checkoutRouter);
 
 // Endpoint de Check

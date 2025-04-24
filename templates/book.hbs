@@ -1,0 +1,73 @@
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{book.title}}</title>
+
+    <style>
+      @page { size: A4; margin: 2cm 2.5cm; } body { font-family:"Times New
+      Roman",serif; font-size:12pt; line-height:1.4; } h1,h2,h3 { margin:0;
+      font-weight:700; } .center { text-align:center; } .page-break {
+      page-break-after:always; } table { width:100%; border-collapse:collapse; }
+      td { padding:.1em 0; vertical-align:top; } td:first-child { width:20px; }
+      td:last-child { text-align:right; }
+    </style>
+  </head>
+  <body>
+
+    <!-- ╭─────── Portada ───────╮ -->
+    <section class="center" style="margin-top:7cm;">
+      <h1 style="font-size:32pt;">{{book.title}}</h1>
+
+      {{#if book.subtitle}}
+        <h2 style="font-size:18pt;margin-top:1cm;">{{book.subtitle}}</h2>
+      {{/if}}
+
+      <div style="margin-top:8cm;">© Editorial Sanitaria – {{year}}</div>
+    </section>
+    <div class="page-break"></div>
+
+    <!-- ╭─────── Índice ───────╮ -->
+    <h2 class="center" style="margin-bottom:1.5cm;">Índice</h2>
+    <table>
+      {{#each index}}
+        <tr>
+          <td>{{this.num}}</td>
+          <td>
+            <strong>{{this.title}}</strong><br />
+            <span style="font-style:italic;">{{lookup this.authors 0}}</span>
+          </td>
+          <td>{{this.page}}</td>
+        </tr>
+      {{/each}}
+    </table>
+    <div class="page-break"></div>
+
+    <!-- ╭────── Capítulos ──────╮ -->
+    {{#each chapters}}
+      <h2 class="center">{{this.title}}</h2>
+      <p class="center" style="font-style:italic;">
+        {{lookup this.authors 0}}
+      </p>
+
+      <p>{{{this.introduction}}}</p>
+
+      <h3>Metodología</h3>
+      <p>{{{this.methodology}}}</p>
+
+      <h3>Objetivos</h3>
+      <p>{{{this.objectives}}}</p>
+
+      <h3>Resultados</h3>
+      <p>{{{this.results}}}</p>
+
+      <h3>Discusión</h3>
+      <p>{{{this.discussion}}}</p>
+
+      <h3>Bibliografía</h3>
+      <p>{{{this.bibliography}}}</p>
+
+      <div class="page-break"></div>
+    {{/each}}
+
+  </body>
+</html>

@@ -1,10 +1,13 @@
+// backend-editorial/middlewares/authMiddleware.js
 const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
     // 1) Extraer token
     const header = req.header("Authorization") || "";
-    const token = header.split(" ")[1];
-    if (!token) return res.status(401).json({ message: "Acceso no autorizado." });
+    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    if (!token) {
+        return res.status(401).json({ message: "Acceso no autorizado." });
+    }
 
     try {
         // 2) Verificar firma
@@ -12,16 +15,16 @@ module.exports = (req, res, next) => {
 
         // 3) Normalizar información de usuario
         req.user = {
-            id: payload.sub || payload.id,     // cliente o admin
-            roleId: payload.roleId,                // 1 = admin, 2 = cliente…
-            actorId: payload.act?.sub || null,      // admin real si es impersonación
-            impersonating: !!payload.impersonating        // boolean
+            id: payload.sub || payload.id,                              // cliente o admin
+            roleId: Number(payload.roleId),                             // forzar número
+            actorId: payload.act?.sub ? String(payload.act.sub) : null, // admin real si impersonación
+            impersonating: Boolean(payload.impersonating),              // booleano
         };
 
-        // 4) (debug) log opcional
+        // 4) Log de impersonación (opcional, sólo si impersonating)
         if (req.user.impersonating) {
-            console.log(
-                `[IMPERSONATE] admin=${req.user.actorId} as user=${req.user.id} ` +
+            console.info(
+                `[IMPERSONATE] admin=${req.user.actorId} → as user=${req.user.id} ` +
                 `${req.method} ${req.originalUrl}`
             );
         }

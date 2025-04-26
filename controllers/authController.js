@@ -90,8 +90,6 @@ exports.register = async (req, res) => {
     }
 };
 
-
-
 exports.verifyEmail = async (req, res) => {
     try {
         const { token } = req.query;

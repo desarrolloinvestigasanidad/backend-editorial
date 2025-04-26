@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
 exports.getAllClients = async (req, res) => {
     try {
@@ -104,5 +105,38 @@ exports.impersonateClient = async (req, res) => {
         return res.redirect(`${config.frontendUrl}/?impersonationToken=${impersonationToken}`);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+};
+
+exports.changeUserPassword = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { newPassword } = req.body;
+
+        if (!newPassword || newPassword.length < 8) {
+            return res
+                .status(400)
+                .json({ message: "La nueva contraseña debe tener al menos 8 caracteres." });
+        }
+
+        // Verificar que el usuario existe
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ message: "Usuario no encontrado." });
+        }
+
+        // Encriptar y actualizar
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await User.update(
+            { password: hashed },
+            { where: { id } }
+        );
+
+        return res
+            .status(200)
+            .json({ message: "Contraseña actualizada correctamente." });
+    } catch (err) {
+        console.error("Error al cambiar contraseña:", err);
+        return res.status(500).json({ error: err.message });
     }
 };

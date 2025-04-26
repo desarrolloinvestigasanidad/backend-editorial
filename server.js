@@ -46,6 +46,8 @@ app.use("/api/invoices", require("./routes/invoices"));
 app.use("/api/certificates", require("./routes/certificates"));
 app.use("/api/panels", require("./routes/panels"));
 
+app.use("/api", require("./routes/uploadRoutes"));
+
 const checkoutRouter = require("./routes/checkout");
 
 app.use("/api/create-checkout-session", checkoutRouter);

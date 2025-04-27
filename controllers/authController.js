@@ -66,7 +66,7 @@ exports.register = async (req, res) => {
             province,
             termsAccepted: termsAccepted ? true : false,
             infoAccepted: infoAccepted ? true : false,
-            deviceIp: infoAccepted ? deviceIp : null,
+            deviceIp,
             state: "active",
             verified: false,
             roleId: 2
@@ -90,21 +90,42 @@ exports.register = async (req, res) => {
     }
 };
 
+
 exports.verifyEmail = async (req, res) => {
-    try {
-        const { token } = req.query;
-        if (!token) return res.status(400).json({ message: "Token no proporcionado." });
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findOne({ where: { id: decoded.id } });
-        if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
-        user.verified = true;
-        await user.save();
-        const newToken = jwt.sign({ sub: newUser.id, roleId: newUser.roleId }, process.env.JWT_SECRET, { expiresIn: "24h" });
-        res.status(200).json({ message: "Cuenta verificada correctamente.", token: newToken });
-    } catch (err) {
-        res.status(500).json({ error: "Token inválido o expirado." });
+    const { token } = req.query;
+    if (!token) {
+        return res.status(400).json({ message: "Token no proporcionado." });
     }
+
+    // Intentamos verificar el JWT
+    let payload;
+    try {
+        payload = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+        return res.status(400).json({ message: "Token inválido o expirado." });
+    }
+
+    // Obtenemos el usuario a partir de payload.sub
+    const user = await User.findOne({ where: { id: payload.sub } });
+    if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado." });
+    }
+
+    // Si ya estaba verificado, devolvemos un mensaje informativo
+    if (user.verified) {
+        return res.status(200).json({ message: "Cuenta ya verificada. Por favor, inicia sesión." });
+    }
+
+    // Marcamos como verificado
+    user.verified = true;
+    await user.save();
+
+    // NO devolvemos ningún token: el usuario deberá volver a loguearse
+    return res
+        .status(200)
+        .json({ message: "Cuenta verificada correctamente. Por favor, inicia sesión." });
 };
+
 
 exports.login = async (req, res) => {
     try {

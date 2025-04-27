@@ -7,6 +7,47 @@ const User = require("../models/User");
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
+// --- TEMPLATES DE CORREO -------------------------------------------------
+
+function getValidationEmailTemplate(userName, url) {
+    return {
+        subject: "Validación de Cuenta - Investiga Sanidad",
+        html: `
+        <p>Estimado/a ${userName},</p>
+        <p>Gracias por registrarte en Investiga Sanidad. Para completar el proceso de registro y activar tu cuenta, por favor, haz clic en el siguiente enlace:</p>
+        <p><a href="${url}">${url}</a></p>
+        <p>Si no has solicitado este registro, puedes ignorar este correo.</p>
+        <p>¡Bienvenido/a a nuestra comunidad de investigación científica!</p>
+      `
+    };
+}
+
+function getWelcomeEmailTemplate(userName, loginUrl) {
+    return {
+        subject: "Te has registrado correctamente en Investiga Sanidad",
+        html: `
+        <p>Estimado/a ${userName},</p>
+        <p>¡Tu cuenta ha sido registrada correctamente en Investiga Sanidad! Ahora puedes acceder a nuestra plataforma para publicar tus trabajos científicos.</p>
+        <p>Para acceder a tu cuenta, por favor, inicia sesión con tus credenciales en el siguiente enlace:</p>
+        <p><a href="${loginUrl}">${loginUrl}</a></p>
+        <p>Si tienes alguna duda o necesitas asistencia, no dudes en contactarnos.</p>
+        <p>¡Gracias por formar parte de Investiga Sanidad!</p>
+      `
+    };
+}
+
+function getPasswordResetEmailTemplate(userName, resetUrl) {
+    return {
+        subject: "Has recuperado tu contraseña en Investiga Sanidad",
+        html: `
+        <p>Estimado/a ${userName},</p>
+        <p>Hemos recibido una solicitud para restablecer tu contraseña en Investiga Sanidad. Para proceder, haz clic en el siguiente enlace y crea una nueva contraseña:</p>
+        <p><a href="${resetUrl}">${resetUrl}</a></p>
+        <p>Si no has solicitado este cambio, por favor ignora este correo. Si necesitas asistencia adicional, puedes ponerte en contacto con nosotros.</p>
+      `
+    };
+}
+
 exports.register = async (req, res) => {
     try {
         // Extraemos los campos nuevos y anteriores del body, incluyendo deviceIp y usando infoAccepted para el envío de comunicaciones
@@ -72,17 +113,13 @@ exports.register = async (req, res) => {
             roleId: 2
         });
 
-        // Enviar correo de verificación
+        // Envío solo del correo de validación
         const token = jwt.sign({ sub: newUser.id, roleId: newUser.roleId }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        const frontendVerificationURL = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-        await sendgrid.send({
-            to: email,
-            from: process.env.SENDGRID_FROM_EMAIL,
-            subject: "Verifica tu cuenta en Investiga Sanidad",
-            html: `<p>Haz clic en el siguiente enlace para verificar tu cuenta:</p>
-                   <p><a href="${frontendVerificationURL}">${frontendVerificationURL}</a></p>
-                   <p>Si no solicitaste esta verificación, ignora este correo.</p>`
-        });
+        const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        const validationEmail = getValidationEmailTemplate(firstName, verifyUrl);
+        await sendgrid.send({ to: email, from: process.env.SENDGRID_FROM_EMAIL, subject: validationEmail.subject, html: validationEmail.html });
+
+
 
         res.status(201).json({ message: "Usuario registrado. Verifique su email.", token });
     } catch (err) {
@@ -119,6 +156,12 @@ exports.verifyEmail = async (req, res) => {
     // Marcamos como verificado
     user.verified = true;
     await user.save();
+
+    // Envío del correo de bienvenida
+    const loginUrl = `${process.env.FRONTEND_URL}/login`;
+    const welcomeEmail = getWelcomeEmailTemplate(user.firstName, loginUrl);
+    await sendgrid.send({ to: user.email, from: process.env.SENDGRID_FROM_EMAIL, subject: welcomeEmail.subject, html: welcomeEmail.html });
+
 
     // NO devolvemos ningún token: el usuario deberá volver a loguearse
     return res
@@ -199,14 +242,14 @@ exports.handlePasswordReset = async (req, res) => {
             const user = await User.findOne({ where: { id } });
             if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
             const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-            const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+            const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+            const resetEmail = getPasswordResetEmailTemplate(user.firstName, resetUrl);
             await sendgrid.send({
                 to: user.email,
                 from: process.env.SENDGRID_FROM_EMAIL,
-                subject: "Recuperación de Contraseña",
-                html: `<p>Para restablecer tu contraseña, haz clic en el siguiente enlace:</p>
-                       <p><a href="${resetLink}">${resetLink}</a></p>
-                       <p>Si no solicitaste este restablecimiento, ignora este correo.</p>`,
+                subject: resetEmail.subject,
+                html: resetEmail.html
             });
             return res.status(200).json({ message: "Correo de recuperación enviado." });
         } else if (token && newPassword) {

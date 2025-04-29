@@ -34,15 +34,17 @@ exports.createBookForEdition = async (req, res) => {
         // Asumimos que authorId es nulo
         const authorId = null;
 
-        if (!title || !price) {
-            return res.status(400).json({ message: "Campos obligatorios faltantes: título y precio." });
+        if (!title) {
+            return res.status(400).json({ message: "Campos obligatorios faltantes: título " });
         }
-
+        const priceValue = price != null && price !== ""
+            ? Number(price)
+            : 0;
         const newBook = await Book.create({
             editionId,
             title,
             subtitle: subtitle || null,
-            price: Number(price),
+            price: priceValue,
             isbn: isbn && isbn.trim() !== "" ? isbn : null,
             cover: cover || null,
             openDate: openDate || null,

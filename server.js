@@ -50,7 +50,7 @@ app.use("/api", require("./routes/uploadRoutes"));
 
 const checkoutRouter = require("./routes/checkout");
 
-app.use("/api/create-checkout-session", checkoutRouter);
+app.use("/api/checkout", checkoutRouter);
 
 // Endpoint de Check
 app.get("/", (req, res) => {

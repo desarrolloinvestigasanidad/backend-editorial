@@ -65,3 +65,17 @@ exports.createCheckoutSession = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+// controllers/checkoutController.js
+exports.getCheckoutSession = async (req, res) => {
+    const { sessionId } = req.query;
+    if (!sessionId) {
+        return res.status(400).json({ message: "Falta sessionId" });
+    }
+    try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        res.status(200).json({ session });
+    } catch (err) {
+        console.error("Error al recuperar la sesión:", err);
+        res.status(500).json({ error: err.message });
+    }
+};

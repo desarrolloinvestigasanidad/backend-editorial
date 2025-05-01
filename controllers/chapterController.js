@@ -69,7 +69,8 @@ exports.createChapterForBook = async (req, res) => {
             bookId,
             editionId,
             authorId,
-            content: introduction, // Puedes luego mejorar este campo si lo deseas
+            content: introduction,
+            status: 'pendiente',  // Puedes luego mejorar este campo si lo deseas
         });
 
         // 3. Registrar el historial de consumo de crédito

@@ -72,6 +72,7 @@ const Discount = sequelize.define("Discount", {
     },
 }, {
     timestamps: true,
+    tableName: "discounts",
 });
 
 module.exports = Discount;

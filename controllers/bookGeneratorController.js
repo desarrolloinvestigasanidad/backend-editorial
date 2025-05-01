@@ -4,6 +4,7 @@ const hbs = require("handlebars");
 const puppeteer = require("puppeteer");
 const Book = require("../models/Book");
 const Chapter = require("../models/Chapter");
+const { uploadPDF, getPDFUrl } = require("../services/s3Service");
 
 // ──────────────────────────────────────────────────────────────
 // Utilidades
@@ -14,7 +15,6 @@ function textLen(str) {
 function paginateChapters(chapters, firstPage = 3) {
     let current = firstPage;
     return chapters.map((c, idx) => {
-        // Usa la suma de los bloques para estimar páginas
         const chars = [
             c.introduction,
             c.methodology,
@@ -23,9 +23,7 @@ function paginateChapters(chapters, firstPage = 3) {
             c.discussion,
             c.bibliography
         ].reduce((sum, part) => sum + textLen(part), 0);
-
         const pagesUsed = Math.max(1, Math.ceil(chars / 2800));
-
         const item = {
             num: idx + 1,
             title: (c.title || "Sin título").toUpperCase(),
@@ -44,6 +42,7 @@ exports.generateBookPdf = async (req, res) => {
     try {
         const { bookId } = req.params;
 
+        // 1️⃣ Recuperar libro y capítulos
         const book = await Book.findByPk(bookId);
         if (!book) return res.status(404).json({ message: "Libro no encontrado" });
 
@@ -52,43 +51,47 @@ exports.generateBookPdf = async (req, res) => {
             order: [["createdAt", "ASC"]],
             raw: true
         });
-
-        // Simula lista de autores en cada capítulo (ajusta según tu modelo)
+        if (!chapters.length) {
+            return res.status(400).json({ message: "El libro no tiene capítulos" });
+        }
+        // Simula lista de autores (ajusta según tu modelo real)
         chapters.forEach(c => (c.authors = [c.authorName || c.authorId || "Anon."]));
 
-        // 1- Prepara datos para la plantilla
+        // 2️⃣ Prepara datos para la plantilla Handlebars
         const index = paginateChapters(chapters);
         const templateFn = hbs.compile(
             await fs.readFile(path.join(__dirname, "..", "templates", "book.hbs"), "utf8")
         );
         const html = templateFn({ book, chapters, index });
 
-        // 2- Lanza Puppeteer ► PDF
+        // 3️⃣ Lanza Puppeteer y genera PDF en buffer
         const browser = await puppeteer.launch({
             args: ["--font-render-hinting=none", "--no-sandbox"]
         });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: "networkidle0" });
-
-        // Estilos de impresión (márgenes, cabeceras…)
         const pdfBuffer = await page.pdf({
             format: "A4",
             printBackground: true,
             margin: { top: 40, bottom: 40, left: 50, right: 50 },
             displayHeaderFooter: false
         });
-
         await browser.close();
 
-        // 3- Guarda el fichero y responde la URL pública
-        const outDir = path.join(__dirname, "..", "public", "generated");
-        const filename = `book_${bookId}.pdf`;
-        await fs.mkdir(outDir, { recursive: true });
-        await fs.writeFile(path.join(outDir, filename), pdfBuffer);
+        // 4️⃣ Sube el PDF a S3 (stream o buffer)
+        const fileName = `book_${bookId}.pdf`;
+        const key = await uploadPDF(pdfBuffer, fileName, "application/pdf");
 
-        res.status(200).json({ url: `/generated/${filename}` });
+        // 5️⃣ Obtén URL pública o presigned según permisos
+        // Para público:
+        // const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+        // Para privado con presigned URL:
+        const url = await getPDFUrl(key, 3600);
+
+        return res.status(200).json({ url });
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };

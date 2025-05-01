@@ -65,9 +65,12 @@ exports.generateBookPdf = async (req, res) => {
         const html = templateFn({ book, chapters, index });
 
         // 3️⃣ Lanza Puppeteer y genera PDF en buffer
+        // controllers/bookController.js
         const browser = await puppeteer.launch({
-            args: ["--font-render-hinting=none", "--no-sandbox"]
+            args: ["--no-sandbox", "--disable-setuid-sandbox"]
         });
+
+
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: "networkidle0" });
         const pdfBuffer = await page.pdf({

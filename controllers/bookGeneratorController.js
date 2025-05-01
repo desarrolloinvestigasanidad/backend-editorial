@@ -1,7 +1,6 @@
 const path = require("path");
 const fs = require("fs/promises");
-const hbs = require("handlebars");
-const puppeteer = require("puppeteer");
+const PDFDocument = require("pdfkit");
 const Book = require("../models/Book");
 const Chapter = require("../models/Chapter");
 const { uploadPDF, getPDFUrl } = require("../services/s3Service");
@@ -12,6 +11,7 @@ const { uploadPDF, getPDFUrl } = require("../services/s3Service");
 function textLen(str) {
     return str ? String(str).length : 0;
 }
+
 function paginateChapters(chapters, firstPage = 3) {
     let current = firstPage;
     return chapters.map((c, idx) => {
@@ -36,6 +36,84 @@ function paginateChapters(chapters, firstPage = 3) {
 }
 
 // ──────────────────────────────────────────────────────────────
+// Generación de PDF
+// ──────────────────────────────────────────────────────────────
+async function generatePDF(book, chapters, index) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({
+                size: "A4",
+                margins: {
+                    top: 40,
+                    bottom: 40,
+                    left: 50,
+                    right: 50
+                },
+                bufferPages: true
+            });
+
+            const buffers = [];
+            doc.on("data", buffers.push.bind(buffers));
+            doc.on("end", () => resolve(Buffer.concat(buffers)));
+
+            // Estilos base
+            doc.font("Helvetica");
+
+            // Portada
+            doc.fontSize(24)
+                .text(book.title.toUpperCase(), { align: "center" })
+                .moveDown(2);
+
+            doc.fontSize(14)
+                .text(`Autor: ${book.author || "Desconocido"}`, { align: "center" })
+                .moveDown(1);
+
+            // Índice
+            doc.addPage();
+            doc.fontSize(18).text("ÍNDICE", { underline: true });
+            index.forEach(item => {
+                doc.fontSize(12)
+                    .text(`${item.num}. ${item.title}`, { continued: true })
+                    .text(`... ${item.page}`, { align: "right" });
+                doc.moveDown();
+            });
+
+            // Contenido de capítulos
+            chapters.forEach((chapter, idx) => {
+                doc.addPage();
+                doc.fontSize(16)
+                    .text(`Capítulo ${idx + 1}: ${chapter.title.toUpperCase()}`)
+                    .moveDown(0.5);
+
+                // Contenido del capítulo
+                const sections = [
+                    { title: "Introducción", content: chapter.introduction },
+                    { title: "Metodología", content: chapter.methodology },
+                    { title: "Objetivos", content: chapter.objectives },
+                    { title: "Resultados", content: chapter.results },
+                    { title: "Discusión", content: chapter.discussion },
+                    { title: "Bibliografía", content: chapter.bibliography }
+                ];
+
+                sections.forEach(section => {
+                    if (section.content) {
+                        doc.fontSize(14)
+                            .text(section.title + ":", { paragraphGap: 2 })
+                            .fontSize(12)
+                            .text(section.content, { paragraphGap: 5 });
+                        doc.moveDown();
+                    }
+                });
+            });
+
+            doc.end();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
+// ──────────────────────────────────────────────────────────────
 //  POST /books/:bookId/generate
 // ──────────────────────────────────────────────────────────────
 exports.generateBookPdf = async (req, res) => {
@@ -51,44 +129,23 @@ exports.generateBookPdf = async (req, res) => {
             order: [["createdAt", "ASC"]],
             raw: true
         });
+
         if (!chapters.length) {
             return res.status(400).json({ message: "El libro no tiene capítulos" });
         }
-        // Simula lista de autores (ajusta según tu modelo real)
+
+        // 2️⃣ Preparar datos
         chapters.forEach(c => (c.authors = [c.authorName || c.authorId || "Anon."]));
-
-        // 2️⃣ Prepara datos para la plantilla Handlebars
         const index = paginateChapters(chapters);
-        const templateFn = hbs.compile(
-            await fs.readFile(path.join(__dirname, "..", "templates", "book.hbs"), "utf8")
-        );
-        const html = templateFn({ book, chapters, index });
 
-        // 3️⃣ Lanza Puppeteer y genera PDF en buffer
-        // controllers/bookController.js
-        const browser = await puppeteer.launch({
-            args: ["--no-sandbox", "--disable-setuid-sandbox"]
-        });
+        // 3️⃣ Generar PDF con PDFKit
+        const pdfBuffer = await generatePDF(book, chapters, index);
 
-
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            margin: { top: 40, bottom: 40, left: 50, right: 50 },
-            displayHeaderFooter: false
-        });
-        await browser.close();
-
-        // 4️⃣ Sube el PDF a S3 (stream o buffer)
+        // 4️⃣ Subir a S3
         const fileName = `book_${bookId}.pdf`;
         const key = await uploadPDF(pdfBuffer, fileName, "application/pdf");
 
-        // 5️⃣ Obtén URL pública o presigned según permisos
-        // Para público:
-        // const url = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-        // Para privado con presigned URL:
+        // 5️⃣ Obtener URL
         const url = await getPDFUrl(key, 3600);
 
         return res.status(200).json({ url });

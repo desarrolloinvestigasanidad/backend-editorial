@@ -239,10 +239,10 @@ exports.getChaptersForUser = async (req, res, next) => {
         if (!editionId) {
             return res.status(400).json({ message: "Falta el parámetro editionId" });
         }
-        // Suponiendo que uses un ORM o consultas SQL:
+
         const chapters = await Chapter.findAll({
-            where: { userId, editionId },
-            order: [["createdAt", "ASC"]]
+            where: { authorId: userId, editionId },
+            order: [["createdAt", "ASC"]],
         });
         res.json(chapters);
     } catch (err) {

@@ -1,8 +1,18 @@
 // routes/users.js
 const express = require("express");
-const { getAllUsers, getUserProfile, createUser, getUserById } = require("../controllers/userController");
+const {
+    getAllUsers,
+    getUserProfile,
+    createUser,
+    getUserById
+} = require("../controllers/userController");
 const authenticate = require("../middlewares/authMiddleware");
-const { getChapterCredits, getAvailableChapterCredits } = require("../controllers/chapterController");
+const {
+    getChapterCredits,
+    getAvailableChapterCredits,
+    getChaptersForUser      // <— Importamos el nuevo controlador
+} = require("../controllers/chapterController");
+
 const router = express.Router();
 
 router.get("/", authenticate, getAllUsers);
@@ -10,9 +20,26 @@ router.get("/profile", authenticate, getUserProfile);
 // Nueva ruta para crear un usuario (staff, por ejemplo)
 router.post("/", authenticate, createUser);
 
-router.get("/:userId/editions/:editionId/chapter-credits", getChapterCredits);
-router.get("/:userId/editions/:editionId/available-credits", getAvailableChapterCredits);
+// Créditos de capítulo
+router.get(
+    "/:userId/editions/:editionId/chapter-credits",
+    authenticate,
+    getChapterCredits
+);
+router.get(
+    "/:userId/editions/:editionId/available-credits",
+    authenticate,
+    getAvailableChapterCredits
+);
 
+// 📖 Nueva ruta: obtener capítulos de un usuario en una edición
+router.get(
+    "/:userId/chapters",
+    authenticate,
+    getChaptersForUser
+);
+
+// Obtener un usuario por id
 router.get("/:id", authenticate, getUserById);
 
 module.exports = router;

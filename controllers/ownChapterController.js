@@ -1,4 +1,5 @@
 const Chapter = require("../models/Chapter");
+const ChapterPurchase = require("../models/ChapterPurchase");
 
 // Obtener todos los capítulos propios (sin editionId ni bookId)
 exports.getAllOwnChapters = async (req, res) => {
@@ -79,6 +80,24 @@ exports.deleteOwnChapter = async (req, res) => {
         await chapter.destroy();
         res.status(200).json({ message: "Capítulo propio eliminado." });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+exports.listChapterPurchases = async (req, res) => {
+    try {
+        const { userId } = req.query;
+        if (!userId) {
+            return res.status(400).json({ message: "Missing userId query parameter." });
+        }
+
+        const purchases = await ChapterPurchase.findAll({
+            where: { userId },
+        });
+
+        // wrap in the same shape your front-end expects
+        res.status(200).json({ chapter_purchases: purchases });
+    } catch (err) {
+        console.error("Error fetching chapter purchases:", err);
         res.status(500).json({ error: err.message });
     }
 };

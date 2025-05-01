@@ -6,6 +6,8 @@ const {
     createOwnChapter,
     updateOwnChapter,
     deleteOwnChapter,
+    listChapterPurchases,
+
 } = require("../controllers/ownChapterController");
 
 const creditConsumptionController = require("../controllers/creditConsumptionController");
@@ -23,5 +25,7 @@ router.get(
     "/users/:userId/editions/:editionId/credit-consumption-history",
     creditConsumptionController.getCreditConsumptionHistory
 );
+
+router.get("/chapter-purchases", listChapterPurchases);
 
 module.exports = router;

@@ -117,7 +117,7 @@ exports.register = async (req, res) => {
         const token = jwt.sign({ sub: newUser.id, roleId: newUser.roleId }, process.env.JWT_SECRET, { expiresIn: "1h" });
         const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
         const validationEmail = getValidationEmailTemplate(firstName, verifyUrl);
-        await sendgrid.send({ to: email, from: process.env.SENDGRID_FROM_EMAIL, subject: validationEmail.subject, html: validationEmail.html });
+        await sendgrid.send({ to: email, from: { email: process.env.SENDGRID_FROM_EMAIL, name: 'Investiga Sanidad' }, subject: validationEmail.subject, html: validationEmail.html });
 
 
 
@@ -160,7 +160,7 @@ exports.verifyEmail = async (req, res) => {
     // Envío del correo de bienvenida
     const loginUrl = `${process.env.FRONTEND_URL}/login`;
     const welcomeEmail = getWelcomeEmailTemplate(user.firstName, loginUrl);
-    await sendgrid.send({ to: user.email, from: process.env.SENDGRID_FROM_EMAIL, subject: welcomeEmail.subject, html: welcomeEmail.html });
+    await sendgrid.send({ to: user.email, from: { email: process.env.SENDGRID_FROM_EMAIL, name: 'Investiga Sanidad' }, subject: welcomeEmail.subject, html: welcomeEmail.html });
 
 
     // NO devolvemos ningún token: el usuario deberá volver a loguearse
@@ -247,7 +247,7 @@ exports.handlePasswordReset = async (req, res) => {
             const resetEmail = getPasswordResetEmailTemplate(user.firstName, resetUrl);
             await sendgrid.send({
                 to: user.email,
-                from: process.env.SENDGRID_FROM_EMAIL,
+                from: { email: process.env.SENDGRID_FROM_EMAIL, name: 'Investiga Sanidad' },
                 subject: resetEmail.subject,
                 html: resetEmail.html
             });

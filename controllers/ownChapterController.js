@@ -49,7 +49,8 @@ exports.createOwnChapter = async (req, res) => {
             bibliography,
             authorId,
             editionId: null,
-            bookId: null,
+            bookId,
+            status: "pendiente",
         });
         res.status(201).json({ message: "Capítulo propio creado.", chapter: newChapter });
     } catch (err) {

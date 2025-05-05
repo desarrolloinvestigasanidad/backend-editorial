@@ -4,14 +4,13 @@ const ChapterPurchase = require("../models/ChapterPurchase");
 // Obtener todos los capítulos propios (sin editionId ni bookId)
 exports.getAllOwnChapters = async (req, res) => {
     try {
-        let chapters;
-        // Si se pasa authorId, se filtran por ese autor
-        if (req.query.authorId) {
-            chapters = await Chapter.findAll({ where: { authorId: req.query.authorId } });
-        } else {
-            // Sino, retorna todos los capítulos
-            chapters = await Chapter.findAll();
-        }
+        const { authorId, bookId } = req.query;
+        // Construyo dinámicamente el filtro
+        const where = {};
+        if (authorId) where.authorId = authorId;
+        if (bookId) where.bookId = bookId;
+
+        const chapters = await Chapter.findAll({ where });
         res.status(200).json(chapters);
     } catch (err) {
         res.status(500).json({ error: err.message });

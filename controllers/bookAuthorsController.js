@@ -4,12 +4,37 @@ const User = require("../models/User");
 const BookAuthor = require("../models/BookAuthor");
 
 exports.listBookAuthors = async (req, res) => {
-    const { bookId } = req.params;
-    const book = await Book.findByPk(bookId, {
-        include: [{ model: User, as: "coAuthors", attributes: ["id", "email"] }]
-    });
-    if (!book) return res.status(404).json({ message: "Libro no encontrado" });
-    res.json(book.coAuthors);
+    try {
+        const { bookId } = req.params;
+        const book = await Book.findByPk(bookId, {
+            include: [{
+                model: User,
+                as: "coAuthors",
+                through: { attributes: [] },
+                attributes: [
+
+                    "id",
+                    "firstName",
+                    "lastName",
+                    "email"
+                ]
+            }]
+        });
+        if (!book) return res.status(404).json({ message: "Libro no encontrado" });
+
+        // Mapear a la forma que espera el frontend
+        const coAuthors = book.coAuthors.map(u => ({
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: u.email,
+        }));
+
+        res.json(coAuthors);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
 };
 
 exports.addBookAuthor = async (req, res) => {

@@ -56,3 +56,30 @@ exports.removeBookAuthor = async (req, res) => {
     await BookAuthor.destroy({ where: { bookId, userId } });
     res.json({ message: "Co-autor eliminado" });
 };
+// GET /api/books/coauthor?userId=xxx
+exports.getBooksForCoauthor = async (req, res) => {
+    try {
+        const userId = req.query.userId;
+        if (!userId) return res.status(400).json({ message: "Falta userId" });
+
+        // Comprueba que el usuario existe
+        const user = await User.findByPk(userId);
+        if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+        // Busca todos los libros donde esté como coautor
+        const books = await Book.findAll({
+            include: [{
+                model: User,
+                as: "coAuthors",
+                where: { id: userId },
+                attributes: [],    // no necesitamos datos de usuario
+                through: { attributes: [] }
+            }]
+        });
+
+        res.status(200).json(books);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+};

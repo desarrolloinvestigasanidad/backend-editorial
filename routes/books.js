@@ -14,11 +14,13 @@ const {
     generateBook,     // Función nueva: elimina un libro propio
 } = require("../controllers/bookController");
 const { generateBookPdf } = require("../controllers/bookGeneratorController");
+const { getBooksForCoauthor } = require("../controllers/bookAuthorsController");
 const router = express.Router();
 
 // Listar todos los libros (podrás filtrar en el frontend por bookType === "libro propio")
 router.get("/", getAllBooks);
 
++router.get("/coauthor", getBooksForCoauthor);
 // Obtener un libro propio
 router.get("/:bookId", getOneBook);
 

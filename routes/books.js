@@ -31,6 +31,8 @@ router.put("/:bookId", updateBook);
 // Eliminar un libro propio
 router.delete("/:bookId", deleteBook);
 
+router.use("/:bookId/authors", require("./bookAuthors"));
+
 router.post("/:bookId/generate", generateBookPdf);
 
 router.get("/:bookId/chapters", getChaptersForBook);

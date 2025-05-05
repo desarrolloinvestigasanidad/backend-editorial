@@ -34,7 +34,7 @@ exports.getOneOwnChapter = async (req, res) => {
 // Crear un capítulo propio
 exports.createOwnChapter = async (req, res) => {
     try {
-        const { title, studyType, methodology, introduction, objectives, results, discussion, bibliography, authorId } = req.body;
+        const { title, studyType, methodology, introduction, objectives, results, discussion, bibliography, authorId, bookId } = req.body;
         if (!title || !studyType || !methodology || !introduction || !objectives || !results || !discussion || !bibliography || !authorId) {
             return res.status(400).json({ message: "Todos los campos son obligatorios." });
         }

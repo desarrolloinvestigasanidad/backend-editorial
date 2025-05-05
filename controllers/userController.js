@@ -98,3 +98,48 @@ exports.getUserById = async (req, res) => {
     }
 };
 
+exports.searchUsers = async (req, res) => {
+    try {
+        const { term } = req.query;
+
+        if (!term) {
+            return res.status(200).json([]);
+        }
+
+        // Buscar usuarios por id (DNI), email o nombre
+        const users = await User.findAll({
+            where: {
+                [Op.or]: [
+                    { id: { [Op.like]: `%${term}%` } },
+                    { email: { [Op.like]: `%${term}%` } },
+                    {
+                        [Op.or]: [
+                            Sequelize.where(
+                                Sequelize.fn('CONCAT', Sequelize.col('firstName'), ' ', Sequelize.col('lastName')),
+                                { [Op.like]: `%${term}%` }
+                            ),
+                            { firstName: { [Op.like]: `%${term}%` } },
+                            { lastName: { [Op.like]: `%${term}%` } }
+                        ]
+                    }
+                ]
+            },
+            attributes: ['id', 'email', 'firstName', 'lastName'],
+            limit: 10
+        });
+
+        // Formatear la respuesta para que coincida con lo que espera nuestro frontend
+        const formattedUsers = users.map(user => ({
+            id: user.id,
+            dni: user.id, // Ya que tu ID es el DNI
+            fullName: `${user.firstName} ${user.lastName}`.trim(),
+            email: user.email
+        }));
+
+        res.status(200).json(formattedUsers);
+    } catch (err) {
+        console.error("Error searching users:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+

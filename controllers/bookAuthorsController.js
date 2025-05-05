@@ -6,7 +6,7 @@ const BookAuthor = require("../models/BookAuthor");
 exports.listBookAuthors = async (req, res) => {
     const { bookId } = req.params;
     const book = await Book.findByPk(bookId, {
-        include: [{ model: User, as: "coAuthors", attributes: ["id", "dni", "fullName", "email"] }]
+        include: [{ model: User, as: "coAuthors", attributes: ["id", "email"] }]
     });
     if (!book) return res.status(404).json({ message: "Libro no encontrado" });
     res.json(book.coAuthors);

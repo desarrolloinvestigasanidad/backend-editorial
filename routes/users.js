@@ -4,7 +4,8 @@ const {
     getAllUsers,
     getUserProfile,
     createUser,
-    getUserById
+    getUserById,
+    searchUsers
 } = require("../controllers/userController");
 const authenticate = require("../middlewares/authMiddleware");
 const {
@@ -39,7 +40,10 @@ router.get(
     getChaptersForUser
 );
 
+router.get("/search", authenticate, searchUsers);
 // Obtener un usuario por id
 router.get("/:id", authenticate, getUserById);
+
+
 
 module.exports = router;

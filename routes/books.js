@@ -1,5 +1,8 @@
 // routes/books.js
 const express = require("express");
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
+const { uploadBookCover } = require("../controllers/bookController");
 const {
     getAllBooks,    // Ya existe en bookController.js (retorna todos los libros)
     getOneBook,     // Función nueva: obtiene un libro por su id sin depender de una edición
@@ -11,7 +14,7 @@ const {
     getOneChapter,
     updateChapter,
     deleteChapter,
-    generateBook,     // Función nueva: elimina un libro propio
+
 } = require("../controllers/bookController");
 const { generateBookPdf } = require("../controllers/bookGeneratorController");
 const { getBooksForCoauthor, updateAuthorOrder } = require("../controllers/bookAuthorsController");
@@ -20,7 +23,7 @@ const router = express.Router();
 // Listar todos los libros (podrás filtrar en el frontend por bookType === "libro propio")
 router.get("/", getAllBooks);
 
-+router.get("/coauthor", getBooksForCoauthor);
+router.get("/coauthor", getBooksForCoauthor);
 // Obtener un libro propio
 router.get("/:bookId", getOneBook);
 
@@ -33,6 +36,8 @@ router.put("/:bookId", updateBook);
 // Eliminar un libro propio
 router.delete("/:bookId", deleteBook);
 
+router.post("/:bookId/cover", upload.single("cover"), uploadBookCover
+);
 router.use("/:bookId/authors", require("./bookAuthors"));
 // In your routes file
 router.put('/:bookId/authors/:userId/order', updateAuthorOrder);

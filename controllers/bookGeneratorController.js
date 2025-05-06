@@ -148,6 +148,8 @@ exports.generateBookPdf = async (req, res) => {
         // 5️⃣ Obtener URL
         const url = await getPDFUrl(key, 3600);
 
+        await book.update({ documentUrl: url });
+
         return res.status(200).json({ url });
 
     } catch (err) {

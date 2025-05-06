@@ -8,13 +8,8 @@ const path = require("path");
 const PDFKit = require("pdfkit");
 const hbs = require("handlebars");
 
-const toPlain = obj =>
-    Array.isArray(obj)
-        ? obj.map(i => (i?.get ? i.get({ plain: true }) : i))
-        : obj?.get ? obj.get({ plain: true }) : obj;
-// ========================
-// Libros en Edición
-// ========================
+const { uploadPDF, uploadFile, getPDFUrl } = require("../services/s3Service");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
 
 
 exports.createBookForEdition = async (req, res) => {
@@ -476,5 +471,38 @@ exports.generateBook = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Error al generar el libro." });
+    }
+};
+
+// POST /api/books/:bookId/cover
+exports.uploadBookCover = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+        const file = req.file;
+        if (!file) {
+            return res.status(400).json({ message: "Falta el fichero de portada." });
+        }
+
+        // 1️⃣ Construir la key: books/<bookId>/covers/<timestamp>_<originalname>
+        const key = `books/${bookId}/covers/${Date.now()}_${file.originalname}`;
+
+        // 2️⃣ Subir el buffer a S3
+        await uploadFile(file.buffer, key, file.mimetype);
+
+        // 3️⃣ Generar una URL firmada para acceder a la portada
+        const coverUrl = await getPDFUrl(key, 60 * 60 * 24 * 7);
+
+        // 4️⃣ Actualizar el registro de Book
+        const book = await Book.findByPk(bookId);
+        if (!book) {
+            return res.status(404).json({ message: "Libro no encontrado." });
+        }
+        await book.update({ cover: coverUrl });
+
+        // 5️⃣ Responder con la URL para el front
+        res.status(200).json({ coverUrl });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: err.message });
     }
 };

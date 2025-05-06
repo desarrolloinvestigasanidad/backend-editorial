@@ -25,7 +25,12 @@ const Book = sequelize.define("Book", {
     defaultValue: "libro edición",
   },
   cover: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  // URL del PDF generado
+  documentUrl: {
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   openDate: {

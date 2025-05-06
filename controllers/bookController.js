@@ -203,7 +203,8 @@ exports.createChapterForBook = async (req, res) => {
             discussion,
             bibliography,
             authorId,
-            content: introduction,  // O cualquier otra lógica para content
+            content: introduction,
+            status: 'pendiente' // O cualquier otra lógica para content
         });
 
         res.status(201).json({ message: "Capítulo creado.", chapter: newChapter });

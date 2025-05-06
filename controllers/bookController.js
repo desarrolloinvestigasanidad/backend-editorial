@@ -47,7 +47,7 @@ exports.createBookForEdition = async (req, res) => {
             publishDate: publishDate || null,
             interests: interests || null,
             bookType: "libro edición", // Valor por defecto
-            status: "desarrollo",        // Valor por defecto
+            status: "pendiente",        // Valor por defecto
             active: true,                // Valor por defecto
             authorId,
         });
@@ -358,7 +358,7 @@ exports.createBook = async (req, res) => {
             publishDate: publishDate || null,
             interests: interests || null,
             bookType: "libro propio",
-            status: "desarrollo",
+            status: "pendiente",
             active: true,
             authorId: null,
         });

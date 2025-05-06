@@ -14,7 +14,7 @@ const {
     generateBook,     // Función nueva: elimina un libro propio
 } = require("../controllers/bookController");
 const { generateBookPdf } = require("../controllers/bookGeneratorController");
-const { getBooksForCoauthor } = require("../controllers/bookAuthorsController");
+const { getBooksForCoauthor, updateAuthorOrder } = require("../controllers/bookAuthorsController");
 const router = express.Router();
 
 // Listar todos los libros (podrás filtrar en el frontend por bookType === "libro propio")
@@ -34,6 +34,8 @@ router.put("/:bookId", updateBook);
 router.delete("/:bookId", deleteBook);
 
 router.use("/:bookId/authors", require("./bookAuthors"));
+// In your routes file
+router.put('/:bookId/authors/:userId/order', updateAuthorOrder);
 
 router.post("/:bookId/generate", generateBookPdf);
 

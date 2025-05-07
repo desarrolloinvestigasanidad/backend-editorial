@@ -1,6 +1,6 @@
-// al principio ya tienes:
 const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+
 const REGION = process.env.AWS_REGION;
 const BUCKET = process.env.S3_BUCKET;
 
@@ -31,8 +31,27 @@ async function getPDFUrl(key, expiresIn = 3600) {
     return getSignedUrl(s3, cmd, { expiresIn });
 }
 
+/**
+ * Descarga un objeto de S3 y lo devuelve como Buffer.
+ * @param {string} key La key del objeto dentro del bucket.
+ * @returns {Promise<Buffer>}
+ */
+async function downloadFile(key) {
+    const resp = await s3.send(new GetObjectCommand({
+        Bucket: BUCKET,
+        Key: key
+    }));
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        resp.Body.on("data", (chunk) => chunks.push(chunk));
+        resp.Body.on("end", () => resolve(Buffer.concat(chunks)));
+        resp.Body.on("error", reject);
+    });
+}
+
 module.exports = {
     uploadPDF,
     getPDFUrl,
-    uploadFile,    // <-- exportamos
+    uploadFile,
+    downloadFile
 };

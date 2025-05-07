@@ -17,7 +17,7 @@ app.use("/webhook", webhookRouter);
 app.use(express.json());
 app.use(passport.initialize());
 
-app.use("/generated", express.static(path.join(__dirname, "public", "generated")));
+app.use("/public", express.static(path.join(__dirname, "public")));
 
 // Rutas de autenticación
 app.use("/api", require("./routes/auth"));

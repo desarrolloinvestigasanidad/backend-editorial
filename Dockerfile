@@ -1,20 +1,49 @@
-# Usa una imagen base oficial de Node.js (puedes ajustar la versión según necesites)
-FROM node:18-alpine
+# ─────────────────────────────────────────────────────────────────────────────
+# 1) Base: Node.js slim (más compatible con Chrome headless que Alpine)
+# ─────────────────────────────────────────────────────────────────────────────
+FROM public.ecr.aws/docker/library/node:18-slim
 
-# Establece el directorio de trabajo dentro del contenedor
+# ─────────────────────────────────────────────────────────────────────────────
+# 2) Instala las librerías nativas que necesita Chromium
+# ─────────────────────────────────────────────────────────────────────────────
+RUN apt-get update \
+ && apt-get install -y \
+    ca-certificates \
+    fonts-liberation \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    wget \
+ && rm -rf /var/lib/apt/lists/*
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3) Directorio de trabajo y deps
+# ─────────────────────────────────────────────────────────────────────────────
 WORKDIR /app
-
-# Copia los archivos de definición de dependencias
 COPY package*.json ./
+RUN npm install --production
 
-# Instala las dependencias
-RUN npm install
-
-# Copia el resto del código de la aplicación
+# ─────────────────────────────────────────────────────────────────────────────
+# 4) Copia el resto del código
+# ─────────────────────────────────────────────────────────────────────────────
 COPY . .
 
-# Expone el puerto en el que la aplicación se ejecuta
+# ─────────────────────────────────────────────────────────────────────────────
+# 5) Exponer puerto y variables
+# ─────────────────────────────────────────────────────────────────────────────
 EXPOSE 8080
+ENV PORT=8080
 
-# Comando para iniciar la aplicación (ajusta "app.js" o "npm start" según tu configuración)
+# ─────────────────────────────────────────────────────────────────────────────
+# 6) Cmd de arranque
+# ─────────────────────────────────────────────────────────────────────────────
 CMD ["node", "server.js"]

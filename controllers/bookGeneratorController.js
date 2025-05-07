@@ -4,7 +4,9 @@ const PDFDocument = require("pdfkit");
 const Book = require("../models/Book");
 const Chapter = require("../models/Chapter");
 const { uploadPDF, getPDFUrl } = require("../services/s3Service");
+const { mergeCoverAndContent } = require("../services/pdfMerge");
 
+const fetch = require("node-fetch").default;
 // ──────────────────────────────────────────────────────────────
 // Utilidades
 // ──────────────────────────────────────────────────────────────
@@ -119,39 +121,40 @@ async function generatePDF(book, chapters, index) {
 exports.generateBookPdf = async (req, res) => {
     try {
         const { bookId } = req.params;
-
-        // 1️⃣ Recuperar libro y capítulos
         const book = await Book.findByPk(bookId);
         if (!book) return res.status(404).json({ message: "Libro no encontrado" });
 
         const chapters = await Chapter.findAll({
             where: { bookId },
             order: [["createdAt", "ASC"]],
-            raw: true
+            raw: true,
         });
-
-        if (!chapters.length) {
+        if (!chapters.length)
             return res.status(400).json({ message: "El libro no tiene capítulos" });
-        }
 
-        // 2️⃣ Preparar datos
-        chapters.forEach(c => (c.authors = [c.authorName || c.authorId || "Anon."]));
+        chapters.forEach((c) => (c.authors = [c.authorName || c.authorId || "Anon."]));
         const index = paginateChapters(chapters);
 
-        // 3️⃣ Generar PDF con PDFKit
-        const pdfBuffer = await generatePDF(book, chapters, index);
+        // Genera el PDF base
+        const contentBuffer = await generatePDF(book, chapters, index);
 
-        // 4️⃣ Subir a S3
+        // Si hay portada, fusiónala pasando también el título
+        let finalBuffer = contentBuffer;
+        if (book.cover) {
+            finalBuffer = await mergeCoverAndContent(
+                book.cover,
+                contentBuffer,
+                book.title
+            );
+        }
+
+        // Sube a S3 y guarda el documentUrl
         const fileName = `book_${bookId}.pdf`;
-        const key = await uploadPDF(pdfBuffer, fileName, "application/pdf");
-
-        // 5️⃣ Obtener URL
+        const key = await uploadPDF(finalBuffer, fileName, "application/pdf");
         const url = await getPDFUrl(key, 3600);
-
         await book.update({ documentUrl: url });
 
         return res.status(200).json({ url });
-
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: err.message });

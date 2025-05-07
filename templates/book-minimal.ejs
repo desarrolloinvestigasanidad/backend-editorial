@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= book.title %></title>
+    <style>
+      body {
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        margin: 2cm;
+      }
+      h1 {
+        text-align: center;
+        font-size: 18pt;
+        margin-bottom: 2cm;
+      }
+      .chapter {
+        margin-bottom: 1cm;
+        page-break-before: always;
+      }
+      .chapter h2 {
+        font-size: 14pt;
+        margin-bottom: 0.5cm;
+      }
+    </style>
+  </head>
+  <body>
+    <h1><%= book.title %></h1>
+
+    <% if (book.isbn) { %>
+    <p>ISBN: <%= book.isbn %></p>
+    <% } %>
+
+    <p>© Investiga Sanidad, <%= currentYear %></p>
+
+    <% chapters.forEach(function(chapter, index) { %>
+    <div class="chapter">
+      <h2><%= (index+1) %>. <%= chapter.title %></h2>
+      <% if (chapter.authors && chapter.authors.length > 0) { %>
+      <p><strong>Autores:</strong> <%= chapter.authors.join(', ') %></p>
+      <% } %> <% if (chapter.introduction) { %>
+      <h3>Introducción</h3>
+      <p><%= chapter.introduction %></p>
+      <% } %>
+    </div>
+    <% }); %>
+  </body>
+</html>

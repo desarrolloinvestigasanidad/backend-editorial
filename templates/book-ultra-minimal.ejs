@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Book</title>
+</head>
+<body>
+<h1><%= book.title %></h1>
+<p>© <%= currentYear %></p>
+<% for(let i=0; i<chapters.length; i++) { %>
+<div>
+<h2>Chapter <%= i+1 %>: <%= chapters[i].title %></h2>
+<% if(chapters[i].introduction) { %>
+<p><%= chapters[i].introduction %></p>
+<% } %>
+</div>
+<% } %>
+</body>
+</html>

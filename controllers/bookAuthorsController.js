@@ -57,7 +57,7 @@ exports.removeBookAuthor = async (req, res) => {
     await BookAuthor.destroy({ where: { bookId, userId } });
     res.json({ message: "Co-autor eliminado" });
 };
-// GET /api/books/coauthor?userId=xxx
+
 exports.getBooksForCoauthor = async (req, res) => {
     try {
         const userId = req.query.userId;

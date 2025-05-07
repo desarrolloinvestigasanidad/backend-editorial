@@ -1,11 +1,5 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# 1) Base: Node.js slim (más compatible con Chrome headless que Alpine)
-# ─────────────────────────────────────────────────────────────────────────────
 FROM public.ecr.aws/docker/library/node:18-slim
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 2) Instala las librerías nativas que necesita Chromium
-# ─────────────────────────────────────────────────────────────────────────────
 RUN apt-get update \
  && apt-get install -y \
     ca-certificates \
@@ -23,27 +17,17 @@ RUN apt-get update \
     libxrandr2 \
     xdg-utils \
     wget \
+    chromium \
  && rm -rf /var/lib/apt/lists/*
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 3) Directorio de trabajo y deps
-# ─────────────────────────────────────────────────────────────────────────────
 WORKDIR /app
 COPY package*.json ./
 RUN npm install --production
-
-# ─────────────────────────────────────────────────────────────────────────────
-# 4) Copia el resto del código
-# ─────────────────────────────────────────────────────────────────────────────
 COPY . .
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 5) Exponer puerto y variables
-# ─────────────────────────────────────────────────────────────────────────────
 EXPOSE 8080
 ENV PORT=8080
+# Para que Puppeteer-core lo encuentre por defecto
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 6) Cmd de arranque
-# ─────────────────────────────────────────────────────────────────────────────
 CMD ["node", "server.js"]

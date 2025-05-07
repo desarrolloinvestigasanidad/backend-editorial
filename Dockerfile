@@ -20,14 +20,19 @@ RUN apt-get update \
     chromium \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-COPY package*.json ./
-RUN npm install --production
-COPY . .
-
-EXPOSE 8080
-ENV PORT=8080
-# Para que Puppeteer-core lo encuentre por defecto
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-CMD ["node", "server.js"]
+ WORKDIR /app
+ COPY package*.json ./
+ 
+ # No queremos que puppeteer intente descargar otra vez Chromium
+ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ 
+ RUN npm install --production
+ COPY . .
+ 
+ # Ya instalaste Chromium con apt, así que indicamos dónde está
+ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ 
+ EXPOSE 8080
+ ENV PORT=8080
+ 
+ CMD ["node", "server.js"]

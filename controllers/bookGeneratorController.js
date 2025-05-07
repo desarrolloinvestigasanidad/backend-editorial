@@ -6,7 +6,7 @@ const Chapter = require("../models/Chapter");
 const { uploadPDF, getPDFUrl } = require("../services/s3Service");
 const { mergeCoverAndContent } = require("../services/pdfMerge");
 
-const fetch = require("node-fetch").default;
+
 // ──────────────────────────────────────────────────────────────
 // Utilidades
 // ──────────────────────────────────────────────────────────────

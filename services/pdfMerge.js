@@ -1,6 +1,6 @@
 // services/pdfMerge.js
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
-const fetch = require("node-fetch").default;
+
 const fs = require("fs/promises");
 const path = require("path");
 

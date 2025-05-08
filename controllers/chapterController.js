@@ -68,7 +68,7 @@ exports.createChapterForBook = async (req, res, next) => {
             editionId,
             authorId,
             content: introduction,
-            status: "pendiente",
+            status: "desarrollo",
         });
 
         // 3. Registrar historial de consumo

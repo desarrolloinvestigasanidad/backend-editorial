@@ -15,7 +15,7 @@ async function uploadFile(buffer, key, contentType) {
         Key: key,
         Body: buffer,
         ContentType: contentType,
-        ACL: "private"
+
     }));
     return key;
 }

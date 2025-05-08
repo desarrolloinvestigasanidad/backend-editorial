@@ -358,7 +358,7 @@ exports.createBook = async (req, res) => {
             publishDate: publishDate || null,
             interests: interests || null,
             bookType: "libro propio",
-            status: "pendiente",
+            status: "desarrollo",
             active: true,
             authorId: null,
         });
@@ -483,24 +483,39 @@ exports.uploadBookCover = async (req, res) => {
             return res.status(400).json({ message: "Falta el fichero de portada." });
         }
 
-        // 1️⃣ Construir la key: books/<bookId>/covers/<timestamp>_<originalname>
+        // 1️⃣ Construir la key para S3
         const key = `books/${bookId}/covers/${Date.now()}_${file.originalname}`;
 
-        // 2️⃣ Subir el buffer a S3
-        await uploadFile(file.buffer, key, file.mimetype);
+        // 2️⃣ Subir el buffer directamente con PutObjectCommand y ACL public-read
+        const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+        const s3 = new S3Client({
+            region: process.env.AWS_REGION,
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            },
+        });
+        await s3.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: key,
+            Body: file.buffer,
+            ContentType: file.mimetype,
 
-        // 3️⃣ Generar una URL firmada para acceder a la portada
-        const coverUrl = await getPDFUrl(key, 60 * 60 * 24 * 7);
+        }));
 
-        // 4️⃣ Actualizar el registro de Book
+        // 3️⃣ Construir la URL pública permanente (no caduca)
+        const publicUrl =
+            `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+        // 4️⃣ Actualizar el campo `cover` del Book
         const book = await Book.findByPk(bookId);
         if (!book) {
             return res.status(404).json({ message: "Libro no encontrado." });
         }
-        await book.update({ cover: coverUrl });
+        await book.update({ cover: publicUrl });
 
-        // 5️⃣ Responder con la URL para el front
-        res.status(200).json({ coverUrl });
+        // 5️⃣ Devolver la URL pública al cliente
+        res.status(200).json({ publicUrl });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: err.message });

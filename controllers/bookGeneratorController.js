@@ -1,57 +1,68 @@
 // controllers/bookGeneratorController.js
-const Book = require("../models/Book")
-const Chapter = require("../models/Chapter")
-const { uploadPDF, getPDFUrl } = require("../services/s3Service")
-const { renderBookHtml } = require("../services/htmlRenderer")
-const { htmlToPdfBuffer } = require("../services/pdfRenderer")
-const { prependCoverPdf } = require("../services/pdfMerger")
-const { paginateChapters } = require("../services/paginateChapters")
-const { enhancePdf } = require("../services/pdfEnhancer")
-const { addBookmarksToPdf } = require("../services/pdfBookmarks")
-const { addWatermark } = require("../services/watermarkService")
-const { generateCacheKey, getCachedPdf, cachePdf } = require("../services/cacheService")
-const { URL } = require("url")
+const Book = require("../models/Book");
+const Chapter = require("../models/Chapter");
+const { renderBookHtml } = require("../services/htmlRenderer");
+const { htmlToPdfBuffer } = require("../services/pdfRenderer");
+const { prependCoverPdf } = require("../services/pdfMerger");
+const { paginateChapters } = require("../services/paginateChapters");
+const { enhancePdf } = require("../services/pdfEnhancer");
+const { addBookmarksToPdf } = require("../services/pdfBookmarks");
+const { addWatermark } = require("../services/watermarkService");
+const { generateCacheKey, getCachedPdf, cachePdf } = require("../services/cacheService");
+const { URL } = require("url");
+
+// ← IMPORTAMOS S3 y PUT para público
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 exports.generateBookPdf = async (req, res) => {
     try {
-        const { bookId } = req.params
-        const { forceRefresh, draft } = req.query
+        const { bookId } = req.params;
+        const { forceRefresh, draft } = req.query;
 
-        // 1️⃣ Get book and chapters data
-        const book = await Book.findByPk(bookId)
-        if (!book) return res.status(404).json({ message: "Libro no encontrado" })
+        // 1️⃣ Datos de libro y capítulos
+        const book = await Book.findByPk(bookId);
+        if (!book) return res.status(404).json({ message: "Libro no encontrado" });
 
         const rawChapters = await Chapter.findAll({
             where: { bookId },
             order: [["createdAt", "ASC"]],
             raw: true,
-        })
-        if (!rawChapters.length) return res.status(400).json({ message: "El libro no tiene capítulos" })
+        });
+        if (!rawChapters.length)
+            return res.status(400).json({ message: "El libro no tiene capítulos" });
 
-        // 1.5️⃣ Check cache if not forcing refresh
+        // 1.5️⃣ Cache check
         if (!forceRefresh) {
-            const cacheKey = generateCacheKey(book, rawChapters)
-            const cachedPdf = await getCachedPdf(cacheKey)
+            const cacheKey = generateCacheKey(book, rawChapters);
+            const cachedPdf = await getCachedPdf(cacheKey);
             if (cachedPdf) {
-                console.log("Usando PDF en caché")
-                // Upload cached PDF to S3 to get a fresh URL
-                const fileName = `book_${bookId}.pdf`
-                const key = await uploadPDF(cachedPdf, fileName, "application/pdf")
-                const url = await getPDFUrl(key, 3600)
-                return res.status(200).json({ url, cached: true })
+                console.log("Usando PDF en caché");
+
+                // → SUBIMOS en público en vez de firmar temp
+                const bucket = process.env.S3_BUCKET;
+                const region = process.env.AWS_REGION;
+                const s3 = new S3Client({ region });
+                const key = `books/${bookId}/pdfs/book_${bookId}.pdf`;
+                await s3.send(new PutObjectCommand({
+                    Bucket: bucket,
+                    Key: key,
+                    Body: cachedPdf,
+                    ContentType: "application/pdf",
+
+                }));
+                const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+                return res.status(200).json({ url: publicUrl, cached: true });
             }
         }
 
-        // 2️⃣ Process chapters data
-        console.log("Procesando datos de capítulos...")
+        // 2️⃣ Procesar capítulos
         rawChapters.forEach((c) => {
-            c.authors = c.authorName ? [c.authorName] : c.authorId ? [c.authorId] : ["Anon."]
-        })
-
-        const index = paginateChapters(rawChapters)
+            c.authors = c.authorName ? [c.authorName] : c.authorId ? [c.authorId] : ["Anon."];
+        });
+        const index = paginateChapters(rawChapters);
         const chapters = rawChapters.map((c, i) => ({
             title: c.title || "Sin título",
-            authors: c.authors || [],
+            authors: c.authors,
             page: index[i].page,
             introduction: c.introduction || "",
             methodology: c.methodology || "",
@@ -59,68 +70,61 @@ exports.generateBookPdf = async (req, res) => {
             results: c.results || "",
             discussion: c.discussion || "",
             bibliography: c.bibliography || "",
-        }))
+        }));
 
-        // 3️⃣ Generate PDF
-        console.log("Generando PDF...")
-        try {
-            // Render HTML
-            console.log("Renderizando HTML...")
-            const html = await renderBookHtml(book, chapters, index)
+        // 3️⃣ Generar PDF en buffer
+        console.log("Renderizando HTML…");
+        const html = await renderBookHtml(book, chapters, index);
+        console.log("Convirtiendo HTML a PDF…");
+        const htmlPdf = await htmlToPdfBuffer(html);
 
-            // Convert HTML to PDF
-            console.log("Convirtiendo HTML a PDF...")
-            const htmlPdf = await htmlToPdfBuffer(html)
-
-            // Merge with cover if available
-            let finalBuffer = htmlPdf
-            if (book.cover) {
-                // Parseamos la URL y miramos sólo la ruta (sin query params)
-                const coverPath = new URL(book.cover).pathname
-                if (coverPath.toLowerCase().endsWith(".pdf")) {
-                    console.log("Añadiendo portada…")
-                    finalBuffer = await prependCoverPdf(book.cover, htmlPdf)
-                }
-            }
-
-            // Add metadata
-            console.log("Añadiendo metadatos...")
-            finalBuffer = await enhancePdf(finalBuffer, book, chapters)
-
-            // Add bookmarks for navigation
-            console.log("Añadiendo marcadores para navegación...")
-            finalBuffer = await addBookmarksToPdf(finalBuffer, book, chapters, index)
-
-            // Add watermark if draft mode
-            if (draft === "true") {
-                console.log("Añadiendo marca de agua BORRADOR...")
-                finalBuffer = await addWatermark(finalBuffer, "BORRADOR")
-            }
-
-            // Cache the final PDF
-            const cacheKey = generateCacheKey(book, rawChapters)
-            await cachePdf(cacheKey, finalBuffer)
-
-            // 4️⃣ Upload to S3 and save URL
-            console.log("Subiendo a S3...")
-            const fileName = `book_${bookId}.pdf`
-            const key = await uploadPDF(finalBuffer, fileName, "application/pdf")
-            const url = await getPDFUrl(key, 3600)
-            await book.update({ documentUrl: url })
-
-            return res.status(200).json({ url, cached: false })
-        } catch (err) {
-            console.error("Error generating PDF:", err)
-            return res.status(500).json({
-                message: "Error al generar el PDF",
-                details: err.message,
-            })
+        // 3.5️⃣ Mezclar portada (pública) si existe
+        let finalBuffer = htmlPdf;
+        if (book.cover) {
+            console.log("Añadiendo portada…");
+            // ← Ya no parseamos pathname ni retiramos dominio/query
+            //    prependCoverPdf puede aceptar URL pública directamente
+            finalBuffer = await prependCoverPdf(book.cover, htmlPdf);
         }
+
+        // 4️⃣ Metadatos, marcadores, watermarks…
+        console.log("Añadiendo metadatos…");
+        finalBuffer = await enhancePdf(finalBuffer, book, chapters);
+        console.log("Añadiendo marcadores…");
+        finalBuffer = await addBookmarksToPdf(finalBuffer, book, chapters, index);
+        if (draft === "true") {
+            console.log("Añadiendo marca de agua BORRADOR…");
+            finalBuffer = await addWatermark(finalBuffer, "BORRADOR");
+        }
+
+        // 5️⃣ Cachear el PDF final
+        const cacheKey = generateCacheKey(book, rawChapters);
+        await cachePdf(cacheKey, finalBuffer);
+
+        // 6️⃣ SUBIR a S3 con ACL pública y guardar URL permanente
+        console.log("Subiendo a S3 público…");
+        const bucket = process.env.S3_BUCKET;
+        const region = process.env.AWS_REGION;
+        const s3 = new S3Client({ region });
+        const pdfKey = `books/${bookId}/pdfs/book_${bookId}.pdf`;
+        await s3.send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: pdfKey,
+            Body: finalBuffer,
+            ContentType: "application/pdf",
+            // ← público permanente
+        }));
+        const publicUrl = `https://${bucket}.s3.${region}.amazonaws.com/${pdfKey}`;
+
+        // 7️⃣ Actualizar registro y responder
+        await book.update({ documentUrl: publicUrl });
+        return res.status(200).json({ url: publicUrl, cached: false });
+
     } catch (err) {
-        console.error("Unexpected error:", err)
+        console.error("Error generateBookPdf:", err);
         return res.status(500).json({
-            message: "Error inesperado",
+            message: "Error al generar el PDF",
             details: err.message,
-        })
+        });
     }
-}
+};

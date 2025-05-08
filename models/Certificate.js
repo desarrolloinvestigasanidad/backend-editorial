@@ -10,6 +10,7 @@ const Certificate = sequelize.define("Certificate", {
     userId: { type: DataTypes.STRING, allowNull: false },
     type: { type: DataTypes.STRING, allowNull: false },
     content: { type: DataTypes.TEXT, allowNull: false },
+    documentUrl: { type: DataTypes.STRING, allowNull: true },
     status: { type: DataTypes.STRING, defaultValue: "generated" },
 }, {
     timestamps: true,

@@ -3,13 +3,13 @@
 <head>
 <title><%= book.title %></title>
 <style>
-  body {
-    font-family: "Times New Roman", Times, serif;
-    font-size: 11pt;
-    line-height: 1.5;
-    margin: 2.5cm;
-    text-align: justify;
-  }
+    body {
+      font-family: Arial, Helvetica, sans-serif;  /* ← Ahora Arial */
+      font-size: 11pt;
+      line-height: 1.5;
+      margin: 0;                              /* ← Antes 2.5cm */
+      text-align: justify;
+    }
   h1 {
     text-align: center;
     font-size: 24pt;
@@ -45,8 +45,10 @@
     margin-bottom: 0.5cm;
   }
   .toc {
-    margin-top: 2cm;
-  }
+      margin-top: 2cm;
+      font-family: Arial, Helvetica, sans-serif;  /* ← Índice también en Arial */
+      font-size: 14pt;                            /* ← Tamaño 14pt */
+    }
   .toc ul {
     list-style: none;
     padding: 0;

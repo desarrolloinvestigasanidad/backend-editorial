@@ -58,9 +58,9 @@ const Book = sequelize.define("Book", {
     allowNull: true,
   },
   status: {
-    // desarrollo, publicado, pre publicado, etc.
-    type: DataTypes.STRING,
-    defaultValue: "desarrollo",
+    type: DataTypes.ENUM("borrador", "pendiente", "aprobado", "rechazado", "publicado"),
+    allowNull: false,
+    defaultValue: "borrador",
   },
   active: {
     type: DataTypes.BOOLEAN,

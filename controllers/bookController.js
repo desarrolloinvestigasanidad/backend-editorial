@@ -358,7 +358,7 @@ exports.createBook = async (req, res) => {
             publishDate: publishDate || null,
             interests: interests || null,
             bookType: "libro propio",
-            status: "desarrollo",
+            status: "borrador",
             active: true,
             authorId: null,
         });

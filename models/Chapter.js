@@ -51,7 +51,7 @@ const Chapter = sequelize.define("Chapter", {
   },
   status: {
     // borrador, pendiente, aprobado, rechazado, eliminado
-    type: DataTypes.ENUM("borrador", "pendiente", "aprobado", "rechazado", "eliminado"),
+    type: DataTypes.ENUM("borrador", "pendiente", "aprobado", "rechazado"),
     defaultValue: "borrador",
   },
   bookId: {
@@ -69,6 +69,10 @@ const Chapter = sequelize.define("Chapter", {
     type: DataTypes.STRING,
     allowNull: false,
     references: { model: "Users", key: "id" },
+  },
+  rejectionReason: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
 }, {
   timestamps: true,

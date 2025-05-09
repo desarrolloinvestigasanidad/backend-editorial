@@ -1,10 +1,11 @@
+// controllers/chapterController.js
 const Chapter = require("../models/Chapter");
 const ChapterPurchase = require("../models/ChapterPurchase");
 const CreditHistory = require("../models/CreditHistory");
 const ChapterAuthor = require("../models/ChapterAuthor");
 const User = require("../models/User");
 
-// Crear un capítulo dentro de un libro (anidado en una edición)
+// 1️⃣ Crear capítulo como borrador (status: "borrador")
 exports.createChapterForBook = async (req, res, next) => {
     try {
         const { editionId, bookId } = req.params;
@@ -20,7 +21,7 @@ exports.createChapterForBook = async (req, res, next) => {
             authorId,
         } = req.body;
 
-        // Validación de campos
+        // Validación de campos obligatorios
         if (
             !title ||
             !studyType ||
@@ -41,10 +42,7 @@ exports.createChapterForBook = async (req, res, next) => {
         const purchases = await ChapterPurchase.findAll({
             where: { userId: authorId, editionId },
         });
-        const totalPurchased = purchases.reduce(
-            (sum, p) => sum + p.chapterCount,
-            0
-        );
+        const totalPurchased = purchases.reduce((sum, p) => sum + p.chapterCount, 0);
         const chaptersCreated = await Chapter.count({
             where: { authorId, editionId },
         });
@@ -54,7 +52,7 @@ exports.createChapterForBook = async (req, res, next) => {
             });
         }
 
-        // 2. Crear capítulo
+        // 2. Crear capítulo con status "borrador"
         const newChapter = await Chapter.create({
             title,
             studyType,
@@ -68,7 +66,8 @@ exports.createChapterForBook = async (req, res, next) => {
             editionId,
             authorId,
             content: introduction,
-            status: "desarrollo",
+            status: "borrador",
+            rejectionReason: null,
         });
 
         // 3. Registrar historial de consumo
@@ -87,6 +86,46 @@ exports.createChapterForBook = async (req, res, next) => {
         next(err);
     }
 };
+
+// 2️⃣ Enviar capítulo a revisión (status: "pendiente")
+exports.submitChapter = async (req, res, next) => {
+    try {
+        const { chapterId } = req.params;
+        const chapter = await Chapter.findByPk(chapterId);
+        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+
+        await chapter.update({ status: "pendiente", rejectionReason: null });
+        res.json({ message: "Capítulo enviado a revisión.", chapter });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 3️⃣ Revisar capítulo (aprobar/rechazar)
+exports.reviewChapter = async (req, res, next) => {
+    try {
+        const { chapterId } = req.params;
+        const { status, rejectionReason } = req.body;
+
+        if (!["aprobado", "rechazado"].includes(status)) {
+            return res.status(400).json({ message: "Estado inválido para revisión." });
+        }
+
+        const chapter = await Chapter.findByPk(chapterId);
+        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+
+        await chapter.update({
+            status,
+            rejectionReason: status === "rechazado" ? rejectionReason : null,
+        });
+
+        res.json({ message: `Capítulo ${status}.`, chapter });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// 4️⃣ Consultas CRUD básicas
 
 // Listar capítulos de un libro (anidados)
 exports.getChaptersForBook = async (req, res, next) => {
@@ -115,7 +154,7 @@ exports.getOneChapterForBook = async (req, res, next) => {
     }
 };
 
-// Actualizar un capítulo (anidado)
+// Actualizar datos de un capítulo (sin tocar estado)
 exports.updateChapterForBook = async (req, res, next) => {
     try {
         const { bookId, chapterId } = req.params;
@@ -128,7 +167,6 @@ exports.updateChapterForBook = async (req, res, next) => {
             results,
             discussion,
             bibliography,
-            status,
         } = req.body;
 
         const chapter = await Chapter.findOne({
@@ -147,8 +185,8 @@ exports.updateChapterForBook = async (req, res, next) => {
             results,
             discussion,
             bibliography,
-            status,
         });
+
         res.status(200).json({ message: "Capítulo actualizado.", chapter });
     } catch (err) {
         next(err);
@@ -172,23 +210,7 @@ exports.deleteChapterForBook = async (req, res, next) => {
     }
 };
 
-// Revisar estado de capítulo
-exports.reviewChapter = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        const chapter = await Chapter.findByPk(id);
-        if (!chapter) {
-            return res.status(404).json({ message: "Capítulo no encontrado." });
-        }
-        await chapter.update({ status });
-        res
-            .status(200)
-            .json({ message: `Capítulo actualizado a estado: ${status}.`, chapter });
-    } catch (err) {
-        next(err);
-    }
-};
+// 5️⃣ Otras utilidades
 
 // Obtener créditos totales adquiridos
 exports.getChapterCredits = async (req, res, next) => {

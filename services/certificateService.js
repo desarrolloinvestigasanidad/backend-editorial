@@ -10,7 +10,7 @@ const { formatDate } = require("./htmlRenderer");
 
 function buildVerifyUrl(hash) {
     const frontend = process.env.FRONTEND_URL.replace(/\/+$/, '');
-    return `${frontend}/verify/${hash}`;
+    return `${frontend}/verify`;
 }
 
 async function renderChapterHtml({ user, book, chapter, issueDate, logoData, verifyUrl }) {

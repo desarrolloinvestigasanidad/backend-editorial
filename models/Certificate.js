@@ -14,6 +14,7 @@ const Certificate = sequelize.define("Certificate", {
     status: { type: DataTypes.STRING, defaultValue: "generated" },
 }, {
     timestamps: true,
+    tableName: "certificates",
 });
 
 module.exports = Certificate;

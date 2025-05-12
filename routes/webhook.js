@@ -8,6 +8,7 @@ const Payment = require("../models/Payment");
 const User = require("../models/User");
 const Book = require("../models/Book");
 const ChapterPurchase = require("../models/ChapterPurchase");
+const Edition = require("../models/Edition");
 
 const {
     getEditionPaymentEmailTemplate,
@@ -101,10 +102,15 @@ router.post(
 
                 // 4️⃣  Enviar correo de pago de edición
                 if (user) {
+                    // ① Obtenemos el título de la edición
+                    const edition = await Edition.findByPk(editionId);
+                    const editionName = edition ? edition.title : "tu edición";
+
                     const editionUrl = `${process.env.FRONTEND_URL}/editions/${editionId}/books`;
+                    // ② Llamamos a la plantilla con el nombre
                     const emailData = getEditionPaymentEmailTemplate(
                         user.firstName,
-                        editionId,
+                        editionName,
                         editionUrl
                     );
                     try {

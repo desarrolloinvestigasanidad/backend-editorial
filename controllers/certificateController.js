@@ -7,34 +7,54 @@ const { generateCertificatePdf } = require("../services/certificateService");
 // Genera un certificado para un usuario
 exports.generateCertificate = async (req, res) => {
     try {
-        const { userId, bookId, chapterId } = req.body;
-        if (!userId || !bookId || !chapterId) {
-            return res.status(400).json({ message: "Faltan parámetros obligatorios." });
+        // 1️⃣ userId viene del token (middleware auth must set req.user.id)
+        const userId = req.user.id;
+        const { bookId, chapterId } = req.body;
+
+        // 2️⃣ Validamos sólo bookId y chapterId
+        if (!bookId || !chapterId) {
+            return res
+                .status(400)
+                .json({ message: "Faltan parámetros obligatorios: bookId o chapterId." });
         }
 
-        // 1️⃣ Obtener datos
-        const user = await User.findByPk(userId);
-        const book = await Book.findByPk(bookId);
-        const chapter = (await Chapter.findAll({ where: { bookId, id: chapterId } }))[0];
+        // 3️⃣ Cargamos datos
+        const [user, book, chapter] = await Promise.all([
+            User.findByPk(userId),
+            Book.findByPk(bookId),
+            Chapter.findOne({ where: { id: chapterId, bookId } }),
+        ]);
         if (!user || !book || !chapter) {
-            return res.status(404).json({ message: "Usuario, libro o capítulo no encontrado." });
+            return res
+                .status(404)
+                .json({ message: "Usuario, libro o capítulo no encontrado." });
         }
 
-        // 2️⃣ Generar PDF
-        const issueDate = new Date();                         // fecha de emisión
-        const validationUrl = `${process.env.APP_URL}/validar/${chapterId}`;
-        const { url } = await generateCertificatePdf({ user, book, chapter, issueDate, validationUrl });
-
-        // 3️⃣ Guardar en BD
-        const certificate = await Certificate.create({
-            userId,
-            type: "chapter_author",
-            content: JSON.stringify({ bookId, chapterId, issueDate }),
-            documentUrl: url,
-            status: "generated",
+        // 4️⃣ Generamos hash y PDF
+        const verifyHash = crypto.randomBytes(16).toString("hex");
+        const issueDate = new Date();
+        const { url: documentUrl } = await generateCertificatePdf({
+            user,
+            book,
+            chapter,
+            issueDate,
+            verifyHash,
         });
 
-        // 4️⃣ Responder
+        // 5️⃣ Guardamos en BD
+        const certificate = await Certificate.create({
+            userId,
+            bookId,
+            chapterId,
+            type: "chapter_author",
+            content: JSON.stringify({ bookId, chapterId, issueDate }),
+            verifyHash,
+            documentUrl,
+            status: "generated",
+            issuedAt: issueDate,
+        });
+
+        // 6️⃣ Respondemos
         res.status(201).json({ message: "Certificado generado.", certificate });
     } catch (err) {
         console.error("Error al generar certificado:", err);

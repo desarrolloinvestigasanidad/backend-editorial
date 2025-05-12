@@ -114,12 +114,14 @@ function getPasswordResetEmailTemplate(userName, resetUrl) {
   };
 }
 
-function getEditionPaymentEmailTemplate(userName, editionId, editionUrl) {
+function getEditionPaymentEmailTemplate(userName, editionName, editionUrl) {
   const bodyContent = `
     <h1>¡Pago recibido correctamente!</h1>
     <p>Estimado/a ${userName},</p>
-    <p>Hemos recibido su abono correctamente para la <strong>Edición ${editionId}</strong>. Ahora puede enviar sus capítulos en la sección "Libros" de dicha edición haciendo clic en el siguiente enlace:</p>
-    <div style="text-align:center;"><a href="${editionUrl}" class="button">Acceder a Edición ${editionId}</a></div>
+    <p>Hemos recibido su abono correctamente para la <strong>Edición "${editionName}"</strong>. Ahora puede enviar sus capítulos en la sección “Libros” de dicha edición haciendo clic en el siguiente enlace:</p>
+    <div style="text-align:center;">
+      <a href="${editionUrl}" class="button">Acceder a la edición</a>
+    </div>
     <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
     <p>¡Gracias por confiar en Investiga Sanidad!</p>
   `;

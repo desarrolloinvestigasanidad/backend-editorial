@@ -2,6 +2,7 @@
 
 const sendgrid = require("@sendgrid/mail");
 const Payment = require("../models/Payment");
+const Edition = require("../models/Edition");
 const User = require("../models/User");
 
 const {
@@ -70,10 +71,15 @@ exports.createPayment = async (req, res) => {
 
             // Si viene editionId, enviamos plantilla de pago de edición
             if (editionId) {
+                // ① Obtenemos la edición para usar su título
+                const edition = await Edition.findByPk(editionId);
+                const editionName = edition ? edition.title : "tu edición";
+
                 const editionUrl = `${process.env.FRONTEND_URL}/editions/${editionId}/books`;
+                // ② Pasamos editionName en lugar de editionId
                 emailData = getEditionPaymentEmailTemplate(
                     user.firstName,
-                    editionId,
+                    editionName,
                     editionUrl
                 );
 

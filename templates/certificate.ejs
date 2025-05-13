@@ -143,13 +143,27 @@
       </div>
 
       <div class="bottom-row">
-        <div class="sig-placeholder">(FIRMA)</div>
+        <div class="sig-placeholder">
+          <% if (signatureData) { %>
+          <img
+            src="data:image/png;base64,<%= signatureData %>"
+            alt="Firma"
+            style="max-width: 150px; height: auto" />
+          <% } else { %> (FIRMA) <% } %>
+        </div>
+
         <div class="qr">
           <img
             src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=<%= encodeURIComponent(verifyUrl) %>"
             alt="QR Code" />
         </div>
-        <div class="socidesa-logo">(LOGO SOCIDESA)</div>
+
+        <div class="socidesa-logo">
+          <img
+            src="data:image/png;base64,<%= socidesaLogoData %>"
+            alt="Logo SOCIDESA"
+            style="max-width: 100%; height: auto" />
+        </div>
       </div>
 
       <div class="footer">Murcia, a <%= formatDate(issueDate) %></div>

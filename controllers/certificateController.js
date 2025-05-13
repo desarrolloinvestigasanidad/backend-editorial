@@ -2,6 +2,8 @@ const Certificate = require("../models/Certificate");
 const User = require("../models/User");
 const Book = require("../models/Book");
 const Chapter = require("../models/Chapter");
+const crypto = require("crypto");
+
 const { generateCertificatePdf } = require("../services/certificateService");
 
 // Genera un certificado para un usuario

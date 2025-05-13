@@ -13,10 +13,17 @@ function buildVerifyUrl(hash) {
     return `${frontend}/verify`;
 }
 
-async function renderChapterHtml({ user, book, chapter, issueDate, logoData, verifyUrl }) {
+async function renderChapterHtml({ user, book, chapter, issueDate, logoData, socidesaLogoData, signatureData, verifyUrl }) {
     const tplPath = path.join(__dirname, "../templates/certificate.ejs");
     const tpl = await fsp.readFile(tplPath, "utf-8");
-    return ejs.render(tpl, { user, book, chapter, issueDate, logoData, verifyUrl, formatDate });
+    return ejs.render(tpl, {
+        user, book, chapter, issueDate,
+        logoData,
+        socidesaLogoData,
+        signatureData,
+        verifyUrl,
+        formatDate
+    })
 }
 
 exports.generateCertificatePdf = async function ({ user, book, chapter, issueDate, verifyHash }) {
@@ -25,12 +32,23 @@ exports.generateCertificatePdf = async function ({ user, book, chapter, issueDat
     const logoData = fs.existsSync(logoPath)
         ? fs.readFileSync(logoPath).toString("base64")
         : null;
-
+    const socidesaPath = path.join(__dirname, "../public/logos/logo_socidesa.png");
+    const socidesaLogoData = fs.readFileSync(socidesaPath, { encoding: "base64" });
+    const signaturePath = path.join(__dirname, "../public/logos/firma.png");
+    const signatureData = fs.existsSync(signaturePath)
+        ? fs.readFileSync(signaturePath, "base64")
+        : null;
     // Construir verifyUrl
     const verifyUrl = buildVerifyUrl(verifyHash);
 
     // Renderizar HTML
-    const html = await renderChapterHtml({ user, book, chapter, issueDate, logoData, verifyUrl });
+    const html = await renderChapterHtml({
+        user, book, chapter, issueDate,
+        logoData,
+        socidesaLogoData,
+        signatureData,
+        verifyUrl
+    });
 
     // Generar PDF buffer
     const pdfBuffer = await htmlToPdfBuffer(html);

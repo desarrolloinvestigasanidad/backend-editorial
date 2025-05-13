@@ -36,11 +36,12 @@
   .center {
     text-align: center;
   }
-  .authors {
-    font-size: 10pt;
-    text-transform: uppercase;
-    margin-top: 0.5cm;
-  }
+ .authors {
+  font-size: 10pt;
+  text-transform: uppercase;
+  margin: 0.5cm 0;
+  line-height: 1.2;
+}
   p {
     margin-bottom: 0.5cm;
   }
@@ -141,9 +142,11 @@
 <% for(let i=0; i<chapters.length; i++) { %>
 <div class="chapter">
   <h2 class="center"><%= (i+1) %> <%= chapters[i].title.toUpperCase() %></h2>
-  <% if (chapters[i].authors && chapters[i].authors.length > 0) { %>
-    <p class="center authors"><%= chapters[i].authors.join(' Y ') %></p>
-  <% } %>
+ <% if (chapters[i].authors.length) { %>
+  <p class="center authors">
+    <%= chapters[i].authors.join(" Y ") %>
+  </p>
+<% } %>
 
   <% if (chapters[i].introduction) { %>
   <h3>Introducción</h3>

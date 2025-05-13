@@ -1,4 +1,3 @@
-// services/certificateService.js  (Certificado de Capítulo)
 const ejs = require("ejs");
 const fs = require("fs");
 const fsp = require("fs/promises");
@@ -9,53 +8,85 @@ const { uploadPDF, getPDFUrl } = require("./s3Service");
 const { formatDate } = require("./htmlRenderer");
 
 function buildVerifyUrl(hash) {
-    const frontend = process.env.FRONTEND_URL.replace(/\/+$/, '');
-    return `${frontend}/verify`;
+    const frontend = process.env.FRONTEND_URL.replace(/\/+$/, "");
+    return `${frontend}/verify?hash=${hash}`;
 }
 
-async function renderChapterHtml({ user, book, chapter, issueDate, logoData, socidesaLogoData, signatureData, verifyUrl }) {
-    const tplPath = path.join(__dirname, "../templates/certificate.ejs");
+async function loadLogoAsBase64(filename) {
+    const filePath = path.join(__dirname, "../public/logos", filename);
+    if (fs.existsSync(filePath)) {
+        return fs.readFileSync(filePath, { encoding: "base64" });
+    }
+    return null;
+}
+
+async function renderHtml(templateName, data) {
+    const tplPath = path.join(__dirname, "../templates", templateName);
     const tpl = await fsp.readFile(tplPath, "utf-8");
-    return ejs.render(tpl, {
-        user, book, chapter, issueDate,
+    return ejs.render(tpl, data);
+}
+
+/**
+ * Genera el PDF para un certificado de capítulo
+ */
+async function generateChapterCertificate({ user, book, chapter, issueDate, verifyHash }) {
+    const logoData = await loadLogoAsBase64("is.png");
+    const socidesaLogoData = await loadLogoAsBase64("logo_socidesa.png");
+    const signatureData = await loadLogoAsBase64("firma.png");
+    const verifyUrl = buildVerifyUrl(verifyHash);
+
+    const html = await renderHtml("certificate.ejs", {
+        user,
+        book,
+        chapter,
+        issueDate,
         logoData,
         socidesaLogoData,
         signatureData,
         verifyUrl,
         formatDate
-    })
+    });
+
+    const pdfBuffer = await htmlToPdfBuffer(html);
+    const key = await uploadPDF(pdfBuffer, `cert-chapter-${verifyHash}.pdf`, "application/pdf");
+    const url = await getPDFUrl(key, 60 * 60 * 24 * 7);
+    return { pdfBuffer, url };
 }
 
-exports.generateCertificatePdf = async function ({ user, book, chapter, issueDate, verifyHash }) {
-    // Leer logo
-    const logoPath = path.join(__dirname, "../public/logos/is.png");
-    const logoData = fs.existsSync(logoPath)
-        ? fs.readFileSync(logoPath).toString("base64")
-        : null;
-    const socidesaPath = path.join(__dirname, "../public/logos/logo_socidesa.png");
-    const socidesaLogoData = fs.readFileSync(socidesaPath, { encoding: "base64" });
-    const signaturePath = path.join(__dirname, "../public/logos/firma.png");
-    const signatureData = fs.existsSync(signaturePath)
-        ? fs.readFileSync(signaturePath, "base64")
-        : null;
-    // Construir verifyUrl
+/**
+ * Genera el PDF para un certificado de libro
+ */
+async function generateBookCertificate({ user, book, coAuthors, issueDate, verifyHash }) {
+    const logoData = await loadLogoAsBase64("is.png");
+    const socidesaLogoData = await loadLogoAsBase64("logo_socidesa.png");
+    const signatureData = await loadLogoAsBase64("firma.png");
     const verifyUrl = buildVerifyUrl(verifyHash);
 
-    // Renderizar HTML
-    const html = await renderChapterHtml({
-        user, book, chapter, issueDate,
+    const html = await renderHtml("certificate-book.ejs", {
+        user,
+        book,
+        coAuthors,
+        issueDate,
         logoData,
         socidesaLogoData,
         signatureData,
-        verifyUrl
+        verifyUrl,
+        formatDate
     });
 
-    // Generar PDF buffer
     const pdfBuffer = await htmlToPdfBuffer(html);
-
-    // Subir a S3
-    const key = await uploadPDF(pdfBuffer, `cert-chapter-${verifyHash}.pdf`, "application/pdf");
+    const key = await uploadPDF(pdfBuffer, `cert-book-${verifyHash}.pdf`, "application/pdf");
     const url = await getPDFUrl(key, 60 * 60 * 24 * 7);
-
     return { pdfBuffer, url };
+}
+
+/**
+ * Función pública que decide qué tipo de certificado generar
+ */
+exports.generateCertificatePdf = async function ({ type, user, book, chapter, coAuthors, issueDate, verifyHash }) {
+    if (type === "book_author") {
+        return await generateBookCertificate({ type, user, book, chapter, coAuthors, issueDate, verifyHash });
+    } else {
+        return await generateChapterCertificate({ user, book, chapter, issueDate, verifyHash });
+    }
 };

@@ -8,6 +8,8 @@ const {
     listChapterPurchases,
 } = require("../controllers/ownChapterController");
 const creditConsumptionController = require("../controllers/creditConsumptionController");
+
+const chapterController = require("../controllers/chapterController");
 // Importamos los nuevos controladores
 const {
     getChapterCredits,
@@ -42,6 +44,18 @@ router.get(
 router.get(
     "/users/:userId/editions/:editionId/available-chapter-credits",
     getAvailableChapterCredits
+);
+
+// Invitar / añadir un autor/coautor a un capítulo
+router.post(
+    "/:chapterId/authors",
+    chapterController.addAuthorToChapter
+);
+
+// Listar los autores de un capítulo
+router.get(
+    "/:chapterId/authors",
+    chapterController.getChapterAuthors
 );
 
 module.exports = router;

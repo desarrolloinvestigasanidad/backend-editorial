@@ -1,6 +1,9 @@
 // controllers/bookGeneratorController.js
 const Book = require("../models/Book");
 const Chapter = require("../models/Chapter");
+const ChapterAuthor = require("../models/ChapterAuthor");
+const User = require("../models/User");
+
 const { renderBookHtml } = require("../services/htmlRenderer");
 const { htmlToPdfBuffer } = require("../services/pdfRenderer");
 const { prependCoverPdf } = require("../services/pdfMerger");
@@ -25,9 +28,19 @@ exports.generateBookPdf = async (req, res) => {
 
         const rawChapters = await Chapter.findAll({
             where: { bookId },
-            order: [["createdAt", "ASC"]],
-            raw: true,
+            include: [{
+                model: User,
+                as: "authors",                // alias de Chapter.belongsToMany
+                attributes: ["firstName", "lastName"],
+                through: { attributes: ["order"] },
+            }],
+            order: [
+                ["createdAt", "ASC"],
+                // IMPORTANTE: ordenar también por el through.order para la relación N:M
+                [{ model: User, as: "authors" }, ChapterAuthor, "order", "ASC"],
+            ],
         });
+
         if (!rawChapters.length)
             return res.status(400).json({ message: "El libro no tiene capítulos" });
 
@@ -55,22 +68,27 @@ exports.generateBookPdf = async (req, res) => {
             }
         }
 
-        // 2️⃣ Procesar capítulos
-        rawChapters.forEach((c) => {
-            c.authors = c.authorName ? [c.authorName] : c.authorId ? [c.authorId] : ["Anon."];
-        });
+
         const index = paginateChapters(rawChapters);
-        const chapters = rawChapters.map((c, i) => ({
-            title: c.title || "Sin título",
-            authors: c.authors,
-            page: index[i].page,
-            introduction: c.introduction || "",
-            methodology: c.methodology || "",
-            objectives: c.objectives || "",
-            results: c.results || "",
-            discussion: c.discussion || "",
-            bibliography: c.bibliography || "",
-        }));
+
+        const chapters = rawChapters.map((c, i) => {
+            // 1️⃣ Array de nombres de autores en orden, con fallbacks
+            const authorNames = c.authors && c.authors.length
+                ? c.authors.map(u => `${u.firstName} ${u.lastName}`)
+                : ["Autor Anónimo"];
+
+            return {
+                title: c.title || "Sin título",
+                authors: authorNames,
+                page: index[i].page,
+                introduction: c.introduction || "",
+                methodology: c.methodology || "",
+                objectives: c.objectives || "",
+                results: c.results || "",
+                discussion: c.discussion || "",
+                bibliography: c.bibliography || "",
+            };
+        });
 
         // 3️⃣ Generar PDF en buffer
         console.log("Renderizando HTML…");

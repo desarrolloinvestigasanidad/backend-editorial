@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Certificado de autoría de libro</title>
+    <style>
+      body {
+        font-family: "Times New Roman", Times, serif;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        padding: 0px 20px;
+        position: relative;
+      }
+      .logo {
+        text-align: center;
+        margin: 0;
+        padding: 0;
+      }
+      .logo img {
+        display: block;
+        margin: 0 auto;
+        max-width: 200px;
+        height: auto;
+      }
+      h1 {
+        text-align: center;
+        font-size: 32px;
+        margin: 0;
+        color: #614195;
+      }
+      .certificate-info {
+        margin: -20px 0 25px 0;
+      }
+      p,
+      ul {
+        font-size: 14px;
+        line-height: 1.6;
+        text-align: justify;
+        margin-bottom: 15px;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 20px;
+      }
+      ul li {
+        margin-left: 20px;
+        margin-bottom: 5px;
+      }
+      .bottom-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+      }
+      .sig-placeholder,
+      .socidesa-logo {
+        width: 150px;
+        text-align: center;
+        font-size: 12px;
+      }
+      .sig-placeholder {
+        border-top: 1px solid #000;
+        padding-top: 5px;
+      }
+      .qr {
+        width: 100px;
+      }
+      .qr img {
+        width: 100%;
+        height: auto;
+      }
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        margin-top: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <% if (logoData) { %>
+      <div class="logo">
+        <img
+          src="data:image/png;base64,<%= logoData %>"
+          alt="Investiga Sanidad Logo" />
+      </div>
+      <% } %>
+      <h1>Certificado de autoría de libro</h1>
+      <div class="certificate-info">
+        <p>
+          La editorial <strong>Investiga Sanidad</strong> y la
+          <strong
+            >Sociedad Científica para el Desarrollo y la Educación
+            Sanitaria</strong
+          >
+          (número 630078 en el Registro Nacional de Asociaciones y CIF
+          G75950352) son los responsables editoriales y compiladores del libro
+          electrónico
+          <strong><%= book.title %></strong> con ISBN
+          <strong><%= book.isbn %></strong> publicado el
+          <strong><%= formatDate(book.publishDate) %></strong>.
+        </p>
+        <p>
+          Por la presente hacen constar y certificar que los siguientes autores
+          han contribuido a esta obra:
+        </p>
+        <ul>
+          <% coAuthors.forEach(author => { %>
+          <li>
+            <strong
+              >D./Dña. <%= author.firstName %> <%= author.lastName %></strong
+            >
+            con DNI/Pasaporte <strong><%= author.id %></strong>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+      <div class="bottom-row">
+        <div class="sig-placeholder">
+          <% if (signatureData) { %>
+          <img
+            src="data:image/png;base64,<%= signatureData %>"
+            alt="Firma"
+            style="max-width: 150px; height: auto" />
+          <% } else { %> (FIRMA) <% } %>
+        </div>
+        <div class="qr">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=<%= encodeURIComponent(verifyUrl) %>"
+            alt="QR Code" />
+        </div>
+        <div class="socidesa-logo">
+          <img
+            src="data:image/png;base64,<%= socidesaLogoData %>"
+            alt="Logo SOCIDESA"
+            style="max-width: 100px; height: auto" />
+        </div>
+      </div>
+      <div class="footer">Murcia, a <%= formatDate(issueDate) %></div>
+    </div>
+  </body>
+</html>

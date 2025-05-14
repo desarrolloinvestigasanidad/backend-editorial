@@ -37,7 +37,7 @@ app.use("/api/config", require("./routes/config"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/clients", require("./routes/clients"));
 app.use("/api/publications", require("./routes/publications"));
-
+app.use("/api/search", require("./routes/searchs"));
 
 // Rutas de funcionalidades adicionales
 app.use("/api/coauthors", require("./routes/coauthors"));

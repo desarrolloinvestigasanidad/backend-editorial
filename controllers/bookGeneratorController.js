@@ -23,7 +23,9 @@ exports.generateBookPdf = async (req, res) => {
         const { forceRefresh, draft } = req.query;
 
         // 1️⃣ Datos de libro y capítulos
-        const book = await Book.findByPk(bookId);
+        const book = await Book.findByPk(bookId, {
+            include: [{ model: User, as: 'coAuthors' }]
+        });
         if (!book) return res.status(404).json({ message: "Libro no encontrado" });
 
         const rawChapters = await Chapter.findAll({
@@ -92,7 +94,13 @@ exports.generateBookPdf = async (req, res) => {
 
         // 3️⃣ Generar PDF en buffer
         console.log("Renderizando HTML…");
-        const html = await renderBookHtml(book, chapters, index);
+        const html = await renderBookHtml({
+            book,
+            chapters,
+            index,
+            coAuthors: book.coAuthors,        // vienen de include: [{ as: 'coAuthors' }]
+            issueDate: new Date(),           // día de generación
+        })
         console.log("Convirtiendo HTML a PDF…");
         const htmlPdf = await htmlToPdfBuffer(html);
 

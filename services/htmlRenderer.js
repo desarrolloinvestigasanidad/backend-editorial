@@ -1,74 +1,112 @@
 // services/htmlRenderer.js
-const ejs = require("ejs")
-const fs = require("fs/promises")
-const path = require("path")
-const { formatNumberedBibliography, processTextReferences } = require("./bibliographyFormatter")
+
+const ejs = require("ejs");
+const fs = require("fs");
+const fsp = require("fs/promises");
+const path = require("path");
+const {
+    formatNumberedBibliography,
+    processTextReferences,
+} = require("./bibliographyFormatter");
+
+/**
+ * Carga un archivo de logo desde /public/logos como Base64
+ */
+async function loadLogoAsBase64(filename) {
+    const filePath = path.join(__dirname, "../public/logos", filename);
+    try {
+        if (fs.existsSync(filePath)) {
+            const buffer = fs.readFileSync(filePath);
+            return buffer.toString("base64");
+        }
+    } catch (err) {
+        console.warn(`No se pudo cargar el logo "${filename}":`, err);
+    }
+    return null;
+}
 
 /**
  * Formatea una fecha ISO a formato local español
  */
 function formatDate(iso) {
-    if (!iso) return ""
-    const d = new Date(iso)
+    if (!iso) return "";
+    const d = new Date(iso);
     return d.toLocaleDateString("es-ES", {
         day: "2-digit",
         month: "long",
         year: "numeric",
-    })
+    });
 }
 
 /**
  * Renderiza el HTML del libro usando la plantilla EJS
  */
-async function renderBookHtml(book, chapters, index) {
+async function renderBookHtml({
+    book,
+    chapters = [],
+    index = [],
+    coAuthors = [],
+    issueDate,
+}) {
     try {
-        // Procesar bibliografía para cada capítulo
+        // 1) Procesar bibliografía y referencias en cada capítulo
         chapters.forEach((chapter) => {
             if (chapter.bibliography) {
                 // Formatear bibliografía con numeración
-                chapter.formattedBibliography = formatNumberedBibliography(chapter.bibliography)
+                chapter.formattedBibliography = formatNumberedBibliography(
+                    chapter.bibliography
+                );
 
                 // Contar número de referencias
-                const refCount = chapter.formattedBibliography.split("\n").length
+                const refCount = chapter.formattedBibliography.split("\n").length;
 
-                // Procesar referencias en el texto
-                if (chapter.introduction) {
-                    chapter.introduction = processTextReferences(chapter.introduction, refCount)
-                }
-                if (chapter.methodology) {
-                    chapter.methodology = processTextReferences(chapter.methodology, refCount)
-                }
-                if (chapter.results) {
-                    chapter.results = processTextReferences(chapter.results, refCount)
-                }
-                if (chapter.discussion) {
-                    chapter.discussion = processTextReferences(chapter.discussion, refCount)
-                }
+                // Procesar referencias en el texto de secciones
+                ["introduction", "methodology", "results", "discussion"].forEach(
+                    (field) => {
+                        if (chapter[field]) {
+                            chapter[field] = processTextReferences(
+                                chapter[field],
+                                refCount
+                            );
+                        }
+                    }
+                );
             }
-        })
+        });
 
-        // Usar la plantilla mejorada
-        const tplPath = path.join(__dirname, "../templates/book.ejs")
-        const tpl = await fs.readFile(tplPath, "utf-8")
+        // 2) Cargar logos como Base64
+        const logoData = await loadLogoAsBase64("is.png");
+        const socidesaLogoData = await loadLogoAsBase64("logo_socidesa.png");
 
-        // Renderizar con opciones de seguridad
+        // 3) Leer la plantilla EJS
+        const tplPath = path.join(__dirname, "../templates/book.ejs");
+        const tpl = await fsp.readFile(tplPath, "utf-8");
+
+        // 4) Renderizar la plantilla con todo el contexto necesario
         return ejs.render(
             tpl,
             {
                 book,
                 chapters,
                 index,
+                coAuthors,
+                issueDate,
                 formatDate,
                 currentYear: new Date().getFullYear(),
+                logoData,
+                socidesaLogoData,
             },
             {
                 rmWhitespace: false,
-            },
-        )
+            }
+        );
     } catch (error) {
-        console.error("Error al renderizar HTML:", error)
-        throw error
+        console.error("Error al renderizar HTML:", error);
+        throw error;
     }
 }
 
-module.exports = { renderBookHtml, formatDate }
+module.exports = {
+    renderBookHtml,
+    formatDate,
+};

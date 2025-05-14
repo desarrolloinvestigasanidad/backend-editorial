@@ -1,188 +1,184 @@
 <!DOCTYPE html>
-<html>
-<head>
-<title><%= book.title %></title>
-<style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;  /* ← Ahora Arial */
-      font-size: 11pt;
-      line-height: 1.5;
-      margin: 0;                              /* ← Antes 2.5cm */
-      text-align: justify;
-    }
-  h1 {
-    text-align: center;
-    font-size: 24pt;
-    font-weight: bold;
-    margin-bottom: 2cm;
-  }
-  h2 {
-    font-size: 14pt;
-    font-weight: bold;
-    text-transform: uppercase;
-  }
-  h3 {
-    font-size: 12pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    margin-top: 1cm;
-  }
-  .page-break {
-    page-break-after: always;
-  }
-  .chapter {
-    page-break-before: always;
-  }
-  .center {
-    text-align: center;
-  }
- .authors {
-  font-size: 10pt;
-  text-transform: uppercase;
-  margin: 0.5cm 0;
-  line-height: 1.2;
-}
-  p {
-    margin-bottom: 0.5cm;
-  }
-  .toc {
-      margin-top: 2cm;
-      font-family: Arial, Helvetica, sans-serif;  /* ← Índice también en Arial */
-      font-size: 14pt;                            /* ← Tamaño 14pt */
-    }
-  .toc ul {
-    list-style: none;
-    padding: 0;
-  }
-  .toc li {
-    margin-bottom: 0.5cm;
-    display: flex;
-  }
-  .toc-title {
-    flex: 1;
-  }
-  .toc-dots {
-    flex: 1;
-    border-bottom: 1px dotted #999;
-    margin: 0 0.5cm;
-  }
-  .toc-page {
-    text-align: right;
-    min-width: 2cm;
-  }
-  .bibliography-item {
-    margin-bottom: 0.3cm;
-    text-indent: -0.5cm;
-    padding-left: 0.5cm;
-  }
-  sup {
-    font-size: 8pt;
-    vertical-align: super;
-  }
-  .footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 10pt;
-  }
-</style>
-</head>
-<body>
-<!-- Portada -->
-<div>
-  <h1><%= book.title.toUpperCase() %></h1>
-  <p class="center">Fecha de publicación: <%= formatDate(book.publishDate) || "Pendiente de publicación" %></p>
-  <% if (book.editionId) { %>
-    <p class="center"><%= book.editionId %>º Edición</p>
-  <% } %>
-</div>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title><%= book.title %></title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11pt;
+        line-height: 1.5;
+        margin: 0;
+        text-align: justify;
+      }
+      h1,
+      h2,
+      h3 {
+        text-transform: uppercase;
+        margin: 0;
+      }
+      h1 {
+        font-size: 28pt;
+        font-weight: bold;
+        margin-bottom: 1cm;
+      }
+      h2 {
+        font-size: 14pt;
+        font-weight: bold;
+        margin-bottom: 0.5cm;
+      }
+      h3 {
+        font-size: 12pt;
+        font-weight: bold;
+        margin-top: 1cm;
+        margin-bottom: 0.3cm;
+      }
+      p,
+      ul {
+        margin: 0.5cm 0;
+      }
+      .center {
+        text-align: center;
+      }
+      .authors {
+        font-size: 10pt;
+        text-transform: none;
+        margin: 0.5cm 0;
+        line-height: 1.2;
+      }
+      .page-break {
+        page-break-after: always;
+      }
+      .blank {
+        height: 100%;
+      }
+      .logo-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2cm;
+      }
+      .logo-row img {
+        max-height: 80px;
+      }
+      .toc {
+        margin: 2cm 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .toc ul {
+        list-style: none;
+        padding: 0;
+      }
+      .toc li {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5cm;
+      }
+      .bibliography-item {
+        margin-bottom: 0.3cm;
+        text-indent: -0.5cm;
+        padding-left: 0.5cm;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 1) Portada se inyecta con prependCoverPdf -->
 
-<div class="page-break"></div>
+    <!-- 2) Página en blanco -->
+    <div class="page-break blank"></div>
 
-<!-- Información editorial -->
-<div>
-  <h2><%= book.title %></h2>
-  <% if (book.publishDate) { %>
-    <p>Fecha de publicación: <%= formatDate(book.publishDate) %></p>
-  <% } %>
-  <p>© Investiga Sanidad, <%= currentYear %></p>
-  <p>© De los textos: sus autores</p>
-  <p>Reservados todos los derechos. No se permite la reproducción total o parcial de esta obra, ni su incorporación a un sistema informático, ni su transmisión en cualquier forma o por cualquier medio (electrónico, mecánico, fotocopia, grabación u otros) sin autorización previa y por escrito de los titulares del copyright. La infracción de dichos derechos puede constituir un delito contra la propiedad intelectual.</p>
-  <p>Todos los autores han asegurado a Investiga Sanidad cumplir con la Ley de Propiedad Intelectual y Derechos de Autor. El contenido de esta publicación se presenta como un servicio a las profesiones sanitarias, reflejando las opiniones, investigaciones, textos, ilustraciones e iconografía propios de los autores y facilitados por ellos mismos bajo su exclusiva responsabilidad; no asumiendo Investiga Sanidad ni SOCIDESA ninguna responsabilidad derivada de la inclusión de las mismas en dicha obra.</p>
-  <p>El libro no sienta bases terapéuticas ni algoritmos diagnósticos que se deban de seguir en la práctica clínica sin cotejar con el resto de la bibliografía científica existente.</p>
-  <% if (book.isbn) { %>
-    <p>ISBN: <%= book.isbn %></p>
-  <% } else { %>
-    <p>ISBN: Pendiente de asignación</p>
-  <% } %>
-  <p>Al ser un libro electrónico digital, no requiere depósito legal.</p>
-  <p>Producción editorial: Investiga Sanidad.</p>
-</div>
+    <!-- 3) Página de título y autores -->
+    <div class="center">
+      <h1><%= book.title %></h1>
+      <p>Fecha de publicación: <%= formatDate(issueDate) %></p>
+      <% if (coAuthors && coAuthors.length) { %>
+      <div class="authors">
+        Autores: <%= coAuthors .map(a => `${a.firstName} ${a.lastName}`)
+        .join(', ') .replace(/, ([^,]*)$/, ' y $1') %>
+      </div>
+      <% } %>
+      <div class="logo-row">
+        <% if (logoData) { %>
+        <img
+          src="data:image/png;base64,<%= logoData %>"
+          alt="Investiga Sanidad Logo" />
+        <% } %> <% if (socidesaLogoData) { %>
+        <img
+          src="data:image/png;base64,<%= socidesaLogoData %>"
+          alt="Logo SOCIDESA" />
+        <% } %>
+      </div>
+    </div>
+    <div class="page-break"></div>
 
-<div class="page-break"></div>
+    <!-- 5) Información editorial -->
+    <div>
+      <h2><%= book.title %></h2>
+      <% if (book.publishDate) { %>
+      <p>Fecha de publicación: <%= formatDate(book.publishDate) %></p>
+      <% } %>
+      <p>© Investiga Sanidad, <%= issueDate.getFullYear() %></p>
+      <p>© De los textos: sus autores</p>
+      <p>
+        Reservados todos los derechos. No se permite la reproducción total o
+        parcial de esta obra…
+      </p>
+      <% if (book.isbn) { %>
+      <p>ISBN: <%= book.isbn %></p>
+      <% } else { %>
+      <p>ISBN: Pendiente de asignación</p>
+      <% } %>
+      <p>Al ser un libro electrónico digital, no requiere depósito legal.</p>
+      <p>Producción editorial: Investiga Sanidad.</p>
+    </div>
+    <div class="page-break blank"></div>
 
-<!-- Índice -->
-<div class="toc">
-  <h2 class="center">Índice</h2>
-  <ul>
-    <% for(let i=0; i<chapters.length; i++) { %>
-    <li>
-      <span class="toc-title"><%= (i+1) %> <%= chapters[i].title.toUpperCase() %></span>
-      <span class="toc-dots"></span>
-      <span class="toc-page"><%= index[i].page %></span>
-    </li>
-    <% } %>
-  </ul>
-</div>
+    <!-- 7) Índice -->
+    <div class="toc">
+      <h2 class="center">ÍNDICE</h2>
+      <ul>
+        <% chapters.forEach((chap, i) => { %>
+        <li>
+          <span><%= (i+1) %>. <%= chap.title.toUpperCase() %></span>
+          <span><%= index[i].page %></span>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
+    <div class="page-break blank"></div>
 
-<div class="page-break"></div>
-
-<!-- Capítulos -->
-<% for(let i=0; i<chapters.length; i++) { %>
-<div class="chapter">
-  <h2 class="center"><%= (i+1) %> <%= chapters[i].title.toUpperCase() %></h2>
- <% if (chapters[i].authors.length) { %>
-  <p class="center authors">
-    <%= chapters[i].authors.join(" Y ") %>
-  </p>
-<% } %>
-
-  <% if (chapters[i].introduction) { %>
-  <h3>Introducción</h3>
-  <p><%= chapters[i].introduction %></p>
-  <% } %>
-  
-  <% if (chapters[i].objectives) { %>
-  <h3>Objetivos</h3>
-  <p><%= chapters[i].objectives %></p>
-  <% } %>
-  
-  <% if (chapters[i].methodology) { %>
-  <h3>Metodología</h3>
-  <p><%= chapters[i].methodology %></p>
-  <% } %>
-  
-  <% if (chapters[i].results) { %>
-  <h3>Resultados</h3>
-  <p><%= chapters[i].results %></p>
-  <% } %>
-  
-  <% if (chapters[i].discussion) { %>
-  <h3>Discusión-Conclusión</h3>
-  <p><%= chapters[i].discussion %></p>
-  <% } %>
-  
-  <% if (chapters[i].bibliography) { %>
-  <h3>Bibliografía</h3>
-  <div>
-    <% const bibEntries = chapters[i].bibliography.split('\n').filter(e => e.trim()); %>
-    <% bibEntries.forEach((entry, bibIndex) => { %>
-      <p class="bibliography-item"><%= (bibIndex+1) %>. <%= entry.trim() %></p>
-    <% }); %>
-  </div>
-  <% } %>
-</div>
-<% } %>
-</body>
+    <!-- 9) Capítulos -->
+    <% chapters.forEach((chap, i) => { %>
+    <div class="chapter">
+      <h2>Capítulo <%= i+1 %>:</h2>
+      <h3><%= chap.title %></h3>
+      <% if (chap.authors && chap.authors.length) { %>
+      <div class="authors">
+        <%= chap.authors.join(', ').replace(/, ([^,]*)$/, ' y $1') %>
+      </div>
+      <% } %> <% if (chap.introduction) { %>
+      <h3>Introducción</h3>
+      <p><%= chap.introduction %></p>
+      <% } %> <% if (chap.objectives) { %>
+      <h3>Objetivos</h3>
+      <p><%= chap.objectives %></p>
+      <% } %> <% if (chap.methodology) { %>
+      <h3>Metodología</h3>
+      <p><%= chap.methodology %></p>
+      <% } %> <% if (chap.results) { %>
+      <h3>Resultados</h3>
+      <p><%= chap.results %></p>
+      <% } %> <% if (chap.discussion) { %>
+      <h3>Discusión-Conclusión</h3>
+      <p><%= chap.discussion %></p>
+      <% } %> <% if (chap.bibliography) { %>
+      <h3>Bibliografía</h3>
+      <% chap.bibliography.split('\n').filter(e => e.trim()).forEach((entry,
+      idx) => { %>
+      <p class="bibliography-item"><%= (idx+1) %>. <%= entry.trim() %></p>
+      <% }) %> <% } %>
+    </div>
+    <div class="page-break"></div>
+    <% }) %>
+  </body>
 </html>

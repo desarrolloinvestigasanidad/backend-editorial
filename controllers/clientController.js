@@ -140,3 +140,34 @@ exports.changeUserPassword = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 };
+exports.verifyClientById = async (req, res) => {
+    try {
+        // 1) Comprobar rol
+        if (req.user.roleId !== 1) {
+            return res.status(403).json({ message: "No autorizado." });
+        }
+
+        const { id } = req.params;
+        // 2) Encontrar al cliente
+        const client = await User.findOne({ where: { id, roleId: 2 } });
+        if (!client) {
+            return res.status(404).json({ message: "Cliente no encontrado." });
+        }
+
+        // 3) Actualizar verified. Permitimos toggle o establecer explícito
+        const { verified } = req.body;
+        // Si no viene verified en body, invertimos el valor actual
+        const newStatus = typeof verified === "boolean"
+            ? verified
+            : !client.verified;
+
+        client.verified = newStatus;
+        await client.save();
+
+        // 4) Devolver el objeto actualizado
+        return res.status(200).json({ message: "Estado de verificación actualizado.", client });
+    } catch (err) {
+        console.error("Error en verifyClientById:", err);
+        return res.status(500).json({ error: err.message });
+    }
+};

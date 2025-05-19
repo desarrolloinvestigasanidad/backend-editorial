@@ -1,5 +1,5 @@
 const express = require("express");
-const { getAllClients, getClientById, updateClientById, deleteClientById, getClientPayments, getClientPublications, impersonateClient, changeUserPassword } = require("../controllers/clientController");
+const { getAllClients, getClientById, updateClientById, deleteClientById, getClientPayments, getClientPublications, impersonateClient, changeUserPassword, verifyClientById } = require("../controllers/clientController");
 const authenticate = require("../middlewares/authMiddleware");
 const isAdmin = require("../middlewares/isAdmin");
 const router = express.Router();
@@ -18,5 +18,5 @@ router.put(
     isAdmin,
     changeUserPassword
 );
-
+router.put("/:id/verify", authenticate, verifyClientById);
 module.exports = router;

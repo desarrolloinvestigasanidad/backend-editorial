@@ -1,13 +1,16 @@
+// controllers/discountController.js
 const Discount = require("../models/Discount");
 
-// controllers/discountController.js
+// Crear nuevo descuento
 exports.createDiscount = async (req, res) => {
     try {
-        // Extrae todos los campos necesarios del body
         const {
             code,
-            discountType,
+            offerType,
             value,
+            chapterCount,
+            creditCost,
+            fullBook,
             minimumPrice,
             maxUses,
             timesUsed,
@@ -20,14 +23,17 @@ exports.createDiscount = async (req, res) => {
             applyToOwnBook,
         } = req.body;
 
-        if (!code || !value) {
+        if (!code || value == null) {
             return res.status(400).json({ message: "Código y valor son obligatorios." });
         }
 
         const discount = await Discount.create({
             code,
-            discountType,
+            offerType,
             value,
+            chapterCount: offerType === "chapters" ? chapterCount : null,
+            creditCost: offerType === "credit" ? creditCost : null,
+            fullBook: offerType === "chapters" ? !!fullBook : false,
             minimumPrice,
             maxUses,
             timesUsed,
@@ -46,7 +52,7 @@ exports.createDiscount = async (req, res) => {
     }
 };
 
-
+// Obtener todos los descuentos
 exports.getDiscounts = async (req, res) => {
     try {
         const discounts = await Discount.findAll();
@@ -55,6 +61,8 @@ exports.getDiscounts = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Actualizar descuento existente
 exports.updateDiscount = async (req, res) => {
     try {
         const { id } = req.params;
@@ -65,8 +73,11 @@ exports.updateDiscount = async (req, res) => {
 
         const {
             code,
-            discountType,
+            offerType,
             value,
+            chapterCount,
+            creditCost,
+            fullBook,
             minimumPrice,
             maxUses,
             timesUsed,
@@ -79,10 +90,19 @@ exports.updateDiscount = async (req, res) => {
             applyToOwnBook,
         } = req.body;
 
-        // Actualiza los campos
+        // Update fields
         discount.code = code ?? discount.code;
-        discount.discountType = discountType ?? discount.discountType;
+        discount.offerType = offerType ?? discount.offerType;
         discount.value = value ?? discount.value;
+        discount.chapterCount = discount.offerType === "chapters"
+            ? (chapterCount ?? discount.chapterCount)
+            : null;
+        discount.creditCost = discount.offerType === "credit"
+            ? (creditCost ?? discount.creditCost)
+            : null;
+        discount.fullBook = discount.offerType === "chapters"
+            ? (fullBook ?? discount.fullBook)
+            : false;
         discount.minimumPrice = minimumPrice ?? discount.minimumPrice;
         discount.maxUses = maxUses ?? discount.maxUses;
         discount.timesUsed = timesUsed ?? discount.timesUsed;
@@ -100,4 +120,3 @@ exports.updateDiscount = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-

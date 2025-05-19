@@ -13,47 +13,57 @@ const Discount = sequelize.define("Discount", {
         allowNull: false,
         unique: true,
     },
-    // Tipo de descuento (porcentaje vs monto fijo)
-    discountType: {
-        type: DataTypes.ENUM("percentage", "fixed"),
+    // --- CAMBIO: ahora es offerType con 4 opciones ---
+    offerType: {
+        type: DataTypes.ENUM("percentage", "fixed", "chapters", "credit"),
         defaultValue: "percentage",
     },
-    // Valor: si es "percentage" se interpretará como %, si es "fixed", como valor en €
+    // Valor base (para percentage/fixed), reutilizado también como valor monetario
     value: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
     },
-    // Importe mínimo
+    // --- NUEVOS CAMPOS ---
+    // Si offerType === "chapters", cuántos capítulos regala
+    chapterCount: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    // Si offerType === "credit", cuántos créditos regala o cuesta
+    creditCost: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+    },
+    // Si regala libro completo en lugar de un número concreto de capítulos
+    fullBook: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    // (el resto de campos queda igual)
     minimumPrice: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
     },
-    // Máximo de usos
     maxUses: {
         type: DataTypes.INTEGER,
         defaultValue: 1,
     },
-    // Veces que se ha utilizado
     timesUsed: {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
-    // Fecha de inicio
     startDate: {
         type: DataTypes.DATE,
         allowNull: true,
     },
-    // Fecha de fin
     endDate: {
         type: DataTypes.DATE,
         allowNull: true,
     },
-    // Observaciones
     notes: {
         type: DataTypes.TEXT,
         allowNull: true,
     },
-    // Campos existentes
     appliesToAllEditions: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,

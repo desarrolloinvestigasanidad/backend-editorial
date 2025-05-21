@@ -118,18 +118,40 @@ function getEditionPaymentEmailTemplate(userName, editionName, editionUrl) {
   const bodyContent = `
     <h1>¡Pago recibido correctamente!</h1>
     <p>Estimado/a ${userName},</p>
-    <p>Hemos recibido su abono correctamente para la <strong>Edición "${editionName}"</strong>. Ahora puede enviar sus capítulos en la sección “Libros” de dicha edición haciendo clic en el siguiente enlace:</p>
-    <div style="text-align:center;">
-      <a href="${editionUrl}" class="button">Acceder a la edición</a>
+    <p>
+      Hemos recibido su abono correctamente para la
+      <strong>Edición ${editionName}</strong>.
+      Ahora puede enviar sus capítulos en la sección “Libros”
+      de dicha edición haciendo clic en el siguiente enlace:
+    </p>
+    <div style="text-align:center; margin: 24px 0;">
+      <a
+        href="${editionUrl}"
+        style="
+          display: inline-block;
+          padding: 12px 24px;
+          background-color: #6B21A8;
+          color: #ffffff;
+          text-decoration: none;
+          border-radius: 4px;
+          font-weight: bold;
+        "
+      >
+        Ir a edición
+      </a>
     </div>
     <p>Si tiene alguna pregunta o necesita asistencia, no dude en contactarnos.</p>
     <p>¡Gracias por confiar en Investiga Sanidad!</p>
   `;
   return {
-    subject: "Pago recibido correctamente - Investiga Sanidad",
-    html: buildEmail({ title: "Pago recibido - Investiga Sanidad", bodyContent })
+    subject: "Pago recibido correctamente – Investiga Sanidad",
+    html: buildEmail({
+      title: "Pago recibido – Investiga Sanidad",
+      bodyContent,
+    }),
   };
 }
+
 
 function getBookPaymentEmailTemplate(userName, bookTitle, bookUrl) {
   const bodyContent = `

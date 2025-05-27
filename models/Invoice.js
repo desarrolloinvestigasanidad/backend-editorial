@@ -51,6 +51,7 @@ const Invoice = sequelize.define("Invoice", {
     },
 }, {
     timestamps: true,
+    tableName: "invoices", // Especifica el nombre exacto de la tabla en minúsculas
 });
 
 module.exports = Invoice;

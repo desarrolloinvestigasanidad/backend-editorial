@@ -6,6 +6,7 @@ const Setting = sequelize.define("Setting", {
     value: { type: DataTypes.TEXT, allowNull: false },
 }, {
     timestamps: false,
+    tableName: 'settings',
 });
 
 module.exports = Setting;

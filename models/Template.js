@@ -12,6 +12,7 @@ const Template = sequelize.define("Template", {
     description: { type: DataTypes.STRING, allowNull: true },
 }, {
     timestamps: true,
+    tableName: "templates",
 });
 
 module.exports = Template;

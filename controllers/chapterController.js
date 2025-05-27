@@ -167,6 +167,8 @@ exports.updateChapterForBook = async (req, res, next) => {
             results,
             discussion,
             bibliography,
+            status,
+            rejectionReason,
         } = req.body;
 
         const chapter = await Chapter.findOne({
@@ -185,6 +187,8 @@ exports.updateChapterForBook = async (req, res, next) => {
             results,
             discussion,
             bibliography,
+            status,
+            rejectionReason: status === "rechazado" ? rejectionReason : null,
         });
 
         res.status(200).json({ message: "Capítulo actualizado.", chapter });

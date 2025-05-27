@@ -1,3 +1,5 @@
+// backend-editorial\controllers\ownChapterController.js
+
 const Chapter = require("../models/Chapter");
 const ChapterPurchase = require("../models/ChapterPurchase");
 
@@ -13,6 +15,7 @@ exports.getAllOwnChapters = async (req, res) => {
         const chapters = await Chapter.findAll({ where });
         res.status(200).json(chapters);
     } catch (err) {
+        console.error("Error en getAllOwnChapters:", err); // Añadido para mejor depuración
         res.status(500).json({ error: err.message });
     }
 };
@@ -26,6 +29,7 @@ exports.getOneOwnChapter = async (req, res) => {
         if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
         res.status(200).json(chapter);
     } catch (err) {
+        console.error("Error en getOneOwnChapter:", err); // Añadido para mejor depuración
         res.status(500).json({ error: err.message });
     }
 };
@@ -48,11 +52,13 @@ exports.createOwnChapter = async (req, res) => {
             bibliography,
             authorId,
             editionId: null,
-            bookId,
-            status: "pendiente",
+            bookId, // Asegúrate que bookId puede ser null si el capítulo no está asociado a un libro inicialmente
+            status: "pendiente", // O el estado inicial que prefieras
+            rejectionReason: null // Inicialmente no hay motivo de rechazo
         });
         res.status(201).json({ message: "Capítulo propio creado.", chapter: newChapter });
     } catch (err) {
+        console.error("Error en createOwnChapter:", err); // Añadido para mejor depuración
         res.status(500).json({ error: err.message });
     }
 };
@@ -61,12 +67,47 @@ exports.createOwnChapter = async (req, res) => {
 exports.updateOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
-        const { title, studyType, methodology, introduction, objectives, results, discussion, bibliography, status } = req.body;
+        // Extraemos todos los campos del body, incluyendo rejectionReason
+        const {
+            title,
+            studyType,
+            methodology,
+            introduction,
+            objectives,
+            results,
+            discussion,
+            bibliography,
+            status,
+            rejectionReason // <-- AÑADIDO AQUÍ para recibirlo del body
+        } = req.body;
+
         const chapter = await Chapter.findByPk(chapterId);
-        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
-        await chapter.update({ title, studyType, methodology, introduction, objectives, results, discussion, bibliography, status });
+        if (!chapter) {
+            return res.status(404).json({ message: "Capítulo no encontrado." });
+        }
+
+        // Creamos el objeto con los datos a actualizar
+        const dataToUpdate = {
+            title,
+            studyType,
+            methodology,
+            introduction,
+            objectives,
+            results,
+            discussion,
+            bibliography,
+            status,
+            // Lógica para rejectionReason:
+            // Si el nuevo estado es "rechazado", guarda el rejectionReason.
+            // Si no, establece rejectionReason a null (para limpiar un motivo anterior).
+            rejectionReason: status === "rechazado" ? rejectionReason : null
+        };
+
+        await chapter.update(dataToUpdate); // Usamos el objeto dataToUpdate
+
         res.status(200).json({ message: "Capítulo propio actualizado.", chapter });
     } catch (err) {
+        console.error("Error en updateOwnChapter:", err); // Añadido para mejor depuración
         res.status(500).json({ error: err.message });
     }
 };
@@ -76,13 +117,17 @@ exports.deleteOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const chapter = await Chapter.findByPk(chapterId);
-        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+        if (!chapter) {
+            return res.status(404).json({ message: "Capítulo no encontrado." });
+        }
         await chapter.destroy();
         res.status(200).json({ message: "Capítulo propio eliminado." });
     } catch (err) {
+        console.error("Error en deleteOwnChapter:", err); // Añadido para mejor depuración
         res.status(500).json({ error: err.message });
     }
 };
+
 exports.listChapterPurchases = async (req, res) => {
     try {
         const { userId } = req.query;
@@ -94,8 +139,7 @@ exports.listChapterPurchases = async (req, res) => {
             where: { userId },
         });
 
-        // wrap in the same shape your front-end expects
-        res.status(200).json({ chapter_purchases: purchases });
+        res.status(200).json({ chapter_purchases: purchases }); // Modificado para que coincida con el frontend si es necesario
     } catch (err) {
         console.error("Error fetching chapter purchases:", err);
         res.status(500).json({ error: err.message });

@@ -260,7 +260,7 @@ exports.updateChapter = async (req, res) => {
             results,
             discussion,
             bibliography,
-            status,
+            status, rejectionReason,
         } = req.body;
 
         // Verificar que el libro exista en la edición
@@ -281,6 +281,7 @@ exports.updateChapter = async (req, res) => {
             discussion,
             bibliography,
             status,
+            rejectionReason: status === "rechazado" ? rejectionReason : null,
         });
         res.status(200).json({ message: "Capítulo actualizado.", chapter });
     } catch (err) {

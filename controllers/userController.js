@@ -27,7 +27,6 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
-
 // Nuevo método para crear usuario
 exports.createUser = async (req, res) => {
     try {
@@ -144,3 +143,53 @@ exports.searchUsers = async (req, res) => {
     }
 };
 
+exports.updateUser = async (req, res) => {
+    try {
+        // Extraemos todos los campos que puedas querer actualizar
+        const {
+            email,
+            firstName,
+            lastName,
+            phone,
+            address,
+            country,
+            province,
+            autonomousCommunity,
+            professionalCategory,
+            interests,
+            verified,
+            roleId,
+            password,
+        } = req.body;
+
+        const user = await User.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "Usuario no encontrado." });
+        }
+
+        // Para cada campo, si viene en el body, lo reasignamos
+        if (email !== undefined) user.email = email;
+        if (firstName !== undefined) user.firstName = firstName;
+        if (lastName !== undefined) user.lastName = lastName;
+        if (phone !== undefined) user.phone = phone;
+        if (address !== undefined) user.address = address;
+        if (country !== undefined) user.country = country;
+        if (province !== undefined) user.province = province;
+        if (autonomousCommunity !== undefined) user.autonomousCommunity = autonomousCommunity;
+        if (professionalCategory !== undefined) user.professionalCategory = professionalCategory;
+        if (interests !== undefined) user.interests = interests;
+        if (verified !== undefined) user.verified = verified;
+        if (roleId !== undefined) user.roleId = roleId;
+
+        // Si viene contraseña, la hasheamos
+        if (password) {
+            user.password = await bcrypt.hash(password, 10);
+        }
+
+        await user.save();
+        res.status(200).json({ message: "Usuario actualizado correctamente." });
+    } catch (err) {
+        console.error("Error updating user:", err);
+        res.status(500).json({ error: err.message });
+    }
+};

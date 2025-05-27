@@ -18,3 +18,45 @@ exports.addCoauthor = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+exports.removeCoauthor = async (req, res) => {
+    try {
+        const { userId, bookId, chapterId } = req.body
+        const currentUserId = req.user.id // Asumiendo que tienes middleware de autenticación
+
+        // Verificar que no se está intentando eliminar al autor principal
+        if (userId === currentUserId) {
+            return res.status(400).json({
+                message: "No puedes eliminarte a ti mismo como autor principal.",
+            })
+        }
+
+        const coauthor = await User.findOne({ where: { id: userId } })
+        if (!coauthor) {
+            return res.status(404).json({ message: "Coautor no encontrado." })
+        }
+
+        // Lógica para remover el coautor del libro o capítulo
+        if (chapterId) {
+            // Remover del capítulo
+            // const chapter = await Chapter.findByPk(chapterId);
+            // if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+            // await chapter.removeCoauthor(coauthor);
+        } else if (bookId) {
+            // Remover del libro
+            // const book = await Book.findByPk(bookId);
+            // if (!book) return res.status(404).json({ message: "Libro no encontrado." });
+            // await book.removeCoauthor(coauthor);
+        }
+
+        res.status(200).json({
+            message: "Coautor eliminado exitosamente.",
+            removedCoauthor: {
+                id: coauthor.id,
+                name: `${coauthor.firstName} ${coauthor.lastName}`,
+                email: coauthor.email,
+            },
+        })
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+}

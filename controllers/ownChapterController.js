@@ -5,7 +5,7 @@ const User = require("../models/User"); // Necesario para obtener datos del auto
 const Book = require("../models/Book");   // Necesario para el título del libro
 const Edition = require("../models/Edition");
 const ChapterPurchase = require("../models/ChapterPurchase");
-
+import { getChapterAcceptedEmailTemplate, getChapterRejectedEmailTemplate } from "../templates/emailTemplates";
 // Obtener todos los capítulos propios (sin editionId ni bookId)
 exports.getAllOwnChapters = async (req, res) => {
     try {

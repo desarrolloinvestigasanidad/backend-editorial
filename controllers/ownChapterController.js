@@ -1,16 +1,15 @@
-// backend-editorial\controllers\ownChapterController.js
+import Chapter from "../models/Chapter.js";
+import User from "../models/User.js";
+import Book from "../models/Book.js";
+import Edition from "../models/Edition.js";
+import ChapterPurchase from "../models/ChapterPurchase.js";
+import { getChapterAcceptedEmailTemplate, getChapterRejectedEmailTemplate } from "../templates/emailTemplates.js";
+import sendgrid from "@sendgrid/mail"; // <-- Agrega esta importación si usas Sendgrid
 
-const Chapter = require("../models/Chapter");
-const User = require("../models/User"); // Necesario para obtener datos del autor
-const Book = require("../models/Book");   // Necesario para el título del libro
-const Edition = require("../models/Edition");
-const ChapterPurchase = require("../models/ChapterPurchase");
-import { getChapterAcceptedEmailTemplate, getChapterRejectedEmailTemplate } from "../templates/emailTemplates";
-// Obtener todos los capítulos propios (sin editionId ni bookId)
-exports.getAllOwnChapters = async (req, res) => {
+// Obtener todos los capítulos propios
+export const getAllOwnChapters = async (req, res) => {
     try {
         const { authorId, bookId } = req.query;
-        // Construyo dinámicamente el filtro
         const where = {};
         if (authorId) where.authorId = authorId;
         if (bookId) where.bookId = bookId;
@@ -18,27 +17,26 @@ exports.getAllOwnChapters = async (req, res) => {
         const chapters = await Chapter.findAll({ where });
         res.status(200).json(chapters);
     } catch (err) {
-        console.error("Error en getAllOwnChapters:", err); // Añadido para mejor depuración
+        console.error("Error en getAllOwnChapters:", err);
         res.status(500).json({ error: err.message });
     }
 };
 
-
 // Obtener un capítulo propio por su id
-exports.getOneOwnChapter = async (req, res) => {
+export const getOneOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const chapter = await Chapter.findByPk(chapterId);
         if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
         res.status(200).json(chapter);
     } catch (err) {
-        console.error("Error en getOneOwnChapter:", err); // Añadido para mejor depuración
+        console.error("Error en getOneOwnChapter:", err);
         res.status(500).json({ error: err.message });
     }
 };
 
 // Crear un capítulo propio
-exports.createOwnChapter = async (req, res) => {
+export const createOwnChapter = async (req, res) => {
     try {
         const { title, studyType, methodology, introduction, objectives, results, discussion, bibliography, authorId, bookId } = req.body;
         if (!title || !studyType || !methodology || !introduction || !objectives || !results || !discussion || !bibliography || !authorId) {
@@ -55,36 +53,35 @@ exports.createOwnChapter = async (req, res) => {
             bibliography,
             authorId,
             editionId: null,
-            bookId, // Asegúrate que bookId puede ser null si el capítulo no está asociado a un libro inicialmente
-            status: "pendiente", // O el estado inicial que prefieras
-            rejectionReason: null // Inicialmente no hay motivo de rechazo
+            bookId,
+            status: "pendiente",
+            rejectionReason: null
         });
         res.status(201).json({ message: "Capítulo propio creado.", chapter: newChapter });
     } catch (err) {
-        console.error("Error en createOwnChapter:", err); // Añadido para mejor depuración
+        console.error("Error en createOwnChapter:", err);
         res.status(500).json({ error: err.message });
     }
 };
 
 // Actualizar un capítulo propio
-exports.updateOwnChapter = async (req, res) => {
+export const updateOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const {
             title, studyType, methodology, introduction, objectives,
             results, discussion, bibliography, status, rejectionReason,
-            // No necesitamos bookId o authorId aquí ya que son parte del capítulo existente
         } = req.body;
 
         const chapter = await Chapter.findByPk(chapterId, {
-            include: [ // Incluir el libro para obtener su título y el ID de la edición
+            include: [
                 {
                     model: Book,
-                    attributes: ['title', 'editionId'], // Solo necesitamos el título del libro y el ID de la edición
-                    include: [{ model: Edition, attributes: ['title'] }] // Incluir la edición para su título
+                    attributes: ['title', 'editionId'],
+                    include: [{ model: Edition, attributes: ['title'] }]
                 },
                 {
-                    model: User, // Incluir el autor para su email y nombre
+                    model: User,
                     attributes: ['id', 'firstName', 'email']
                 }
             ]
@@ -94,7 +91,7 @@ exports.updateOwnChapter = async (req, res) => {
             return res.status(404).json({ message: "Capítulo no encontrado." });
         }
 
-        const previousStatus = chapter.status; // Guardar el estado anterior
+        const previousStatus = chapter.status;
         const newStatus = status;
 
         const dataToUpdate = {
@@ -104,39 +101,21 @@ exports.updateOwnChapter = async (req, res) => {
         };
 
         await chapter.update(dataToUpdate);
-        const updatedChapter = await chapter.reload(); // Recargar para tener los datos actualizados, incluyendo asociaciones
+        const updatedChapter = await chapter.reload();
 
-        // Lógica para enviar correo si el estado ha cambiado a aprobado o rechazado
         if (newStatus !== previousStatus && (newStatus === "aprobado" || newStatus === "rechazado")) {
-            const author = updatedChapter.User; // El autor ya está incluido
-            const book = updatedChapter.Book;   // El libro ya está incluido
-            const edition = book?.Edition;      // La edición está anidada en el libro
+            const author = updatedChapter.User;
+            const book = updatedChapter.Book;
+            const edition = book?.Edition;
 
             if (author && author.email) {
                 let emailData;
-                let contextLabel = "";
-                if (book) {
-                    contextLabel += `para el libro "${book.title}"`;
-                    if (edition) {
-                        contextLabel += ` (edición: "${edition.title}")`;
-                    }
-                } else {
-                    contextLabel = "para tu publicación"; // Fallback
-                }
+                let contextLabel = book ? `para el libro "${book.title}"${edition ? ` (edición: "${edition.title}")` : ""}` : "para tu publicación";
 
                 if (newStatus === "aprobado") {
-                    emailData = getChapterAcceptedEmailTemplate(
-                        author.firstName || "Usuario",
-                        updatedChapter.title,
-                        contextLabel
-                    );
-                } else if (newStatus === "rechazado") {
-                    emailData = getChapterRejectedEmailTemplate(
-                        author.firstName || "Usuario",
-                        updatedChapter.title,
-                        updatedChapter.rejectionReason || "No se especificó un motivo.",
-                        contextLabel
-                    );
+                    emailData = getChapterAcceptedEmailTemplate(author.firstName, updatedChapter.title, contextLabel);
+                } else {
+                    emailData = getChapterRejectedEmailTemplate(author.firstName, updatedChapter.title, rejectionReason, contextLabel);
                 }
 
                 if (emailData) {
@@ -150,14 +129,11 @@ exports.updateOwnChapter = async (req, res) => {
                             subject: emailData.subject,
                             html: emailData.html,
                         });
-                        console.log(`Correo de estado de capítulo (${newStatus}) enviado a ${author.email}`);
+                        console.log(`Correo enviado a ${author.email}`);
                     } catch (emailError) {
-                        console.error("Error al enviar correo de estado de capítulo:", emailError.response?.body || emailError);
-                        // No hacer que la actualización falle por el email, pero sí loguearlo.
+                        console.error("Error al enviar correo:", emailError);
                     }
                 }
-            } else {
-                console.warn(`No se pudo enviar correo para el capítulo ${updatedChapter.id}: autor o email no encontrado.`);
             }
         }
 
@@ -169,7 +145,7 @@ exports.updateOwnChapter = async (req, res) => {
 };
 
 // Eliminar un capítulo propio
-exports.deleteOwnChapter = async (req, res) => {
+export const deleteOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const chapter = await Chapter.findByPk(chapterId);
@@ -177,25 +153,22 @@ exports.deleteOwnChapter = async (req, res) => {
             return res.status(404).json({ message: "Capítulo no encontrado." });
         }
         await chapter.destroy();
-        res.status(200).json({ message: "Capítulo propio eliminado." });
+        res.status(200).json({ message: "Capítulo eliminado." });
     } catch (err) {
-        console.error("Error en deleteOwnChapter:", err); // Añadido para mejor depuración
+        console.error("Error en deleteOwnChapter:", err);
         res.status(500).json({ error: err.message });
     }
 };
 
-exports.listChapterPurchases = async (req, res) => {
+// Listar compras de capítulos
+export const listChapterPurchases = async (req, res) => {
     try {
         const { userId } = req.query;
         if (!userId) {
-            return res.status(400).json({ message: "Missing userId query parameter." });
+            return res.status(400).json({ message: "Falta el parámetro userId." });
         }
-
-        const purchases = await ChapterPurchase.findAll({
-            where: { userId },
-        });
-
-        res.status(200).json({ chapter_purchases: purchases }); // Modificado para que coincida con el frontend si es necesario
+        const purchases = await ChapterPurchase.findAll({ where: { userId } });
+        res.status(200).json({ chapter_purchases: purchases });
     } catch (err) {
         console.error("Error fetching chapter purchases:", err);
         res.status(500).json({ error: err.message });

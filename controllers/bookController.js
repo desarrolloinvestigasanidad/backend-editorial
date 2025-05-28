@@ -2,7 +2,12 @@
 const Book = require("../models/Book");
 const Edition = require("../models/Edition");
 const Chapter = require("../models/Chapter");
+const User = require("../models/User");
 
+const sendgrid = require("@sendgrid/mail");
+const {
+    getChapterSubmissionEmailTemplate
+} = require("../templates/emailTemplates");
 const fs = require("fs");
 const path = require("path");
 const PDFKit = require("pdfkit");
@@ -11,10 +16,8 @@ const hbs = require("handlebars");
 const { uploadPDF, uploadFile, getPDFUrl } = require("../services/s3Service");
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
 
-
 exports.createBookForEdition = async (req, res) => {
     try {
-
         const {
             title,
             subtitle,
@@ -24,17 +27,18 @@ exports.createBookForEdition = async (req, res) => {
             openDate,
             deadlineChapters,
             publishDate,
-            interests, editionId
+            interests,
+            editionId,
         } = req.body;
         // Asumimos que authorId es nulo
         const authorId = null;
 
         if (!title) {
-            return res.status(400).json({ message: "Campos obligatorios faltantes: título " });
+            return res
+                .status(400)
+                .json({ message: "Campos obligatorios faltantes: título " });
         }
-        const priceValue = price != null && price !== ""
-            ? Number(price)
-            : 0;
+        const priceValue = price != null && price !== "" ? Number(price) : 0;
         const newBook = await Book.create({
             editionId,
             title,
@@ -47,8 +51,8 @@ exports.createBookForEdition = async (req, res) => {
             publishDate: publishDate || null,
             interests: interests || null,
             bookType: "libro edición", // Valor por defecto
-            status: "pendiente",        // Valor por defecto
-            active: true,                // Valor por defecto
+            status: "pendiente", // Valor por defecto
+            active: true, // Valor por defecto
             authorId,
         });
 
@@ -63,7 +67,8 @@ exports.getBooksForEdition = async (req, res) => {
     try {
         const { id: editionId } = req.params;
         const edition = await Edition.findByPk(editionId);
-        if (!edition) return res.status(404).json({ message: "Edición no encontrada." });
+        if (!edition)
+            return res.status(404).json({ message: "Edición no encontrada." });
 
         const books = await Book.findAll({ where: { editionId } });
         res.status(200).json(books);
@@ -77,7 +82,10 @@ exports.getOneBookFromEdition = async (req, res) => {
     try {
         const { id: editionId, bookId } = req.params;
         const book = await Book.findOne({ where: { id: bookId, editionId } });
-        if (!book) return res.status(404).json({ message: "Libro no encontrado en esta edición." });
+        if (!book)
+            return res
+                .status(404)
+                .json({ message: "Libro no encontrado en esta edición." });
 
         res.status(200).json(book);
     } catch (err) {
@@ -102,11 +110,14 @@ exports.updateBookFromEdition = async (req, res) => {
             interests,
             price,
             status,
-            active
+            active,
         } = req.body;
 
         const book = await Book.findOne({ where: { id: bookId, editionId } });
-        if (!book) return res.status(404).json({ message: "Libro no encontrado en esta edición." });
+        if (!book)
+            return res
+                .status(404)
+                .json({ message: "Libro no encontrado en esta edición." });
 
         await book.update({
             title,
@@ -120,7 +131,7 @@ exports.updateBookFromEdition = async (req, res) => {
             interests,
             price,
             status,
-            active
+            active,
         });
         res.status(200).json({ message: "Libro actualizado.", book });
     } catch (err) {
@@ -133,7 +144,10 @@ exports.deleteBookFromEdition = async (req, res) => {
     try {
         const { id: editionId, bookId } = req.params;
         const book = await Book.findOne({ where: { id: bookId, editionId } });
-        if (!book) return res.status(404).json({ message: "Libro no encontrado en esta edición." });
+        if (!book)
+            return res
+                .status(404)
+                .json({ message: "Libro no encontrado en esta edición." });
 
         await book.destroy();
         res.status(200).json({ message: "Libro eliminado." });
@@ -176,20 +190,24 @@ exports.createChapterForBook = async (req, res) => {
             !bibliography ||
             !authorId
         ) {
-            return res.status(400).json({ message: "Faltan campos obligatorios para el capítulo." });
+            return res
+                .status(400)
+                .json({ message: "Faltan campos obligatorios para el capítulo." });
         }
 
         // Verificar que el libro existe y pertenece a la edición
         const book = await Book.findOne({ where: { id: bookId, editionId } });
         if (!book) {
-            return res.status(404).json({ message: "Libro no encontrado en esta edición." });
+            return res
+                .status(404)
+                .json({ message: "Libro no encontrado en esta edición." });
         }
 
         // Crear capítulo con los campos correspondientes
         const newChapter = await Chapter.create({
             title,
             editionId,
-            bookId: book.id,  // Usamos el id del libro encontrado
+            bookId: book.id, // Usamos el id del libro encontrado
             studyType,
             methodology,
             introduction,
@@ -199,9 +217,37 @@ exports.createChapterForBook = async (req, res) => {
             bibliography,
             authorId,
             content: introduction,
-            status: 'pendiente' // O cualquier otra lógica para content
+            status: "pendiente", // O cualquier otra lógica para content
         });
+        // Enviar correo de "Capítulo Recibido"
+        const author = await User.findByPk(authorId, { attributes: ['firstName', 'email'] });
 
+        if (author && author.email && newChapter) {
+            let contextLabel = `para el libro "${book.title || 'Desconocido'}"`;
+            if (book.Edition) { // Si la edición se incluyó con el libro
+                contextLabel += ` (edición: "${book.Edition.title}")`;
+            }
+
+            const emailData = getChapterSubmissionEmailTemplate(
+                author.firstName || "Estimado/a Autor/a",
+                newChapter.title,
+                contextLabel
+            );
+
+            try {
+                await sendgrid.send({
+                    to: author.email,
+                    from: { email: process.env.SENDGRID_FROM_EMAIL, name: "Investiga Sanidad" },
+                    subject: emailData.subject,
+                    html: emailData.html,
+                });
+                console.log(`Correo de capítulo recibido enviado a ${author.email} para capítulo ${newChapter.id}`);
+            } catch (emailError) {
+                console.error(`Error al enviar correo de capítulo recibido para ${newChapter.id}:`, emailError.response?.body || emailError);
+            }
+        } else {
+            console.warn(`No se pudo enviar correo para nuevo capítulo ${newChapter?.id}: autor, email o libro no encontrado.`);
+        }
         res.status(201).json({ message: "Capítulo creado.", chapter: newChapter });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -211,8 +257,7 @@ exports.createChapterForBook = async (req, res) => {
 // Listar capítulos de un libro
 exports.getChaptersForBook = async (req, res) => {
     try {
-
-        const { id: editionId, bookId } = req.params;       // editionId SOLO existe si venimos de /editions
+        const { id: editionId, bookId } = req.params; // editionId SOLO existe si venimos de /editions
 
         // Construimos dinámicamente el filtro
         const whereBook = { id: bookId };
@@ -220,8 +265,7 @@ exports.getChaptersForBook = async (req, res) => {
 
         const book = await Book.findOne({ where: whereBook });
 
-        if (!book)
-            return res.status(404).json({ message: "Libro no encontrado." });
+        if (!book) return res.status(404).json({ message: "Libro no encontrado." });
 
         const chapters = await Chapter.findAll({ where: { bookId } });
         return res.status(200).json(chapters);
@@ -237,8 +281,11 @@ exports.getOneChapter = async (req, res) => {
         const book = await Book.findOne({ where: { id: bookId, editionId } });
         if (!book) return res.status(404).json({ message: "Libro no encontrado." });
 
-        const chapter = await Chapter.findOne({ where: { id: chapterId, bookId: book.id } });
-        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+        const chapter = await Chapter.findOne({
+            where: { id: chapterId, bookId: book.id },
+        });
+        if (!chapter)
+            return res.status(404).json({ message: "Capítulo no encontrado." });
 
         res.status(200).json(chapter);
     } catch (err) {
@@ -260,7 +307,8 @@ exports.updateChapter = async (req, res) => {
             results,
             discussion,
             bibliography,
-            status, rejectionReason,
+            status,
+            rejectionReason,
         } = req.body;
 
         // Verificar que el libro exista en la edición
@@ -268,8 +316,11 @@ exports.updateChapter = async (req, res) => {
         if (!book) return res.status(404).json({ message: "Libro no encontrado." });
 
         // Verificar que el capítulo exista y pertenezca al libro
-        const chapter = await Chapter.findOne({ where: { id: chapterId, bookId: book.id } });
-        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+        const chapter = await Chapter.findOne({
+            where: { id: chapterId, bookId: book.id },
+        });
+        if (!chapter)
+            return res.status(404).json({ message: "Capítulo no encontrado." });
 
         await chapter.update({
             title,
@@ -296,8 +347,11 @@ exports.deleteChapter = async (req, res) => {
         const book = await Book.findOne({ where: { id: bookId, editionId } });
         if (!book) return res.status(404).json({ message: "Libro no encontrado." });
 
-        const chapter = await Chapter.findOne({ where: { id: chapterId, bookId: book.id } });
-        if (!chapter) return res.status(404).json({ message: "Capítulo no encontrado." });
+        const chapter = await Chapter.findOne({
+            where: { id: chapterId, bookId: book.id },
+        });
+        if (!chapter)
+            return res.status(404).json({ message: "Capítulo no encontrado." });
 
         await chapter.destroy();
         res.status(200).json({ message: "Capítulo eliminado." });
@@ -315,8 +369,8 @@ exports.getAllBooks = async (req, res) => {
             books = await Book.findAll({
                 where: {
                     authorId: req.query.userId,
-                    bookType: "libro propio"
-                }
+                    bookType: "libro propio",
+                },
             });
         } else {
             // Sino, retorna todos los libros
@@ -343,9 +397,21 @@ exports.getOneBook = async (req, res) => {
 // Función para crear un libro propio
 exports.createBook = async (req, res) => {
     try {
-        const { title, subtitle, price, isbn, cover, openDate, deadlineChapters, publishDate, interests } = req.body;
+        const {
+            title,
+            subtitle,
+            price,
+            isbn,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            interests,
+        } = req.body;
         if (!title || !price) {
-            return res.status(400).json({ message: "Campos obligatorios faltantes: título y precio." });
+            return res
+                .status(400)
+                .json({ message: "Campos obligatorios faltantes: título y precio." });
         }
         const newBook = await Book.create({
             editionId: null,
@@ -373,7 +439,20 @@ exports.createBook = async (req, res) => {
 exports.updateBook = async (req, res) => {
     try {
         const { bookId } = req.params;
-        const { title, subtitle, bookType, cover, openDate, deadlineChapters, publishDate, isbn, interests, price, status, active } = req.body;
+        const {
+            title,
+            subtitle,
+            bookType,
+            cover,
+            openDate,
+            deadlineChapters,
+            publishDate,
+            isbn,
+            interests,
+            price,
+            status,
+            active,
+        } = req.body;
         const book = await Book.findByPk(bookId);
         if (!book) return res.status(404).json({ message: "Libro no encontrado." });
         await book.update({
@@ -465,7 +544,8 @@ exports.generateBook = async (req, res) => {
 
         /* 4️⃣  Devolver la URL cuando el PDF esté escrito */
         fileStream.on("finish", () => {
-            const host = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+            const host =
+                process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
             const url = `${host}/generated/${pdfName}`;
             res.status(200).json({ url });
         });
@@ -496,17 +576,17 @@ exports.uploadBookCover = async (req, res) => {
                 secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
             },
         });
-        await s3.send(new PutObjectCommand({
-            Bucket: process.env.S3_BUCKET,
-            Key: key,
-            Body: file.buffer,
-            ContentType: file.mimetype,
-
-        }));
+        await s3.send(
+            new PutObjectCommand({
+                Bucket: process.env.S3_BUCKET,
+                Key: key,
+                Body: file.buffer,
+                ContentType: file.mimetype,
+            })
+        );
 
         // 3️⃣ Construir la URL pública permanente (no caduca)
-        const publicUrl =
-            `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+        const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
         // 4️⃣ Actualizar el campo `cover` del Book
         const book = await Book.findByPk(bookId);

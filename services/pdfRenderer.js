@@ -15,14 +15,7 @@ async function htmlToPdfBuffer(html) {
 
     const page = await browser.newPage();
 
-    // Opcional: si quieres garantizar Times New Roman…
-    await page.evaluateOnNewDocument(() => {
-        document.fonts.ready.then(() => {
-            if (!document.fonts.check('12px "Times New Roman"')) {
-                console.warn("Times New Roman no está disponible, usando serif");
-            }
-        });
-    });
+
 
     await page.setContent(html, { waitUntil: "networkidle0" });
 
@@ -35,7 +28,7 @@ async function htmlToPdfBuffer(html) {
         footerTemplate: `
       <div style="
         width:100%;text-align:center;
-        font-size:10pt;font-family:'Times New Roman',Times,serif;
+        font-size:10pt;font-family:'Calibri',Times,serif;
         padding:0 25mm;
       ">
         <span class="pageNumber"></span>

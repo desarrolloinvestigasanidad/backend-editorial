@@ -1,10 +1,10 @@
-import Chapter from "../models/Chapter.js";
-import User from "../models/User.js";
-import Book from "../models/Book.js";
-import Edition from "../models/Edition.js";
-import ChapterPurchase from "../models/ChapterPurchase.js";
-import { getChapterAcceptedEmailTemplate, getChapterRejectedEmailTemplate } from "../templates/emailTemplates.js";
-import sendgrid from "@sendgrid/mail"; // <-- Agrega esta importación si usas Sendgrid
+const Chapter = require("../models/Chapter.js");
+const User = require("../models/User.js");
+const Book = require("../models/Book.js");
+const Edition = require("../models/Edition.js");
+const ChapterPurchase = require("../models/ChapterPurchase.js");
+const { getChapterAcceptedEmailTemplate, getChapterRejectedEmailTemplate } = require("../templates/emailTemplates.js");
+const sendgrid = require("@sendgrid/mail"); // <-- Agrega esta importación si usas Sendgrid
 
 // Obtener todos los capítulos propios
 export const getAllOwnChapters = async (req, res) => {

@@ -4,10 +4,10 @@ const Book = require("../models/Book.js");
 const Edition = require("../models/Edition.js");
 const ChapterPurchase = require("../models/ChapterPurchase.js");
 const { getChapterAcceptedEmailTemplate, getChapterRejectedEmailTemplate } = require("../templates/emailTemplates.js");
-const sendgrid = require("@sendgrid/mail"); // <-- Agrega esta importación si usas Sendgrid
+const sendgrid = require("@sendgrid/mail");
 
 // Obtener todos los capítulos propios
-export const getAllOwnChapters = async (req, res) => {
+const getAllOwnChapters = async (req, res) => {
     try {
         const { authorId, bookId } = req.query;
         const where = {};
@@ -23,7 +23,7 @@ export const getAllOwnChapters = async (req, res) => {
 };
 
 // Obtener un capítulo propio por su id
-export const getOneOwnChapter = async (req, res) => {
+const getOneOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const chapter = await Chapter.findByPk(chapterId);
@@ -36,7 +36,7 @@ export const getOneOwnChapter = async (req, res) => {
 };
 
 // Crear un capítulo propio
-export const createOwnChapter = async (req, res) => {
+const createOwnChapter = async (req, res) => {
     try {
         const { title, studyType, methodology, introduction, objectives, results, discussion, bibliography, authorId, bookId } = req.body;
         if (!title || !studyType || !methodology || !introduction || !objectives || !results || !discussion || !bibliography || !authorId) {
@@ -65,7 +65,7 @@ export const createOwnChapter = async (req, res) => {
 };
 
 // Actualizar un capítulo propio
-export const updateOwnChapter = async (req, res) => {
+const updateOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const {
@@ -73,7 +73,7 @@ export const updateOwnChapter = async (req, res) => {
             results, discussion, bibliography, status, rejectionReason,
         } = req.body;
 
-        const chapter = await Chapter.findByPk(chapterId, {
+        let chapter = await Chapter.findByPk(chapterId, { // Cambiado a let para poder reasignar después de reload
             include: [
                 {
                     model: Book,
@@ -101,11 +101,25 @@ export const updateOwnChapter = async (req, res) => {
         };
 
         await chapter.update(dataToUpdate);
-        const updatedChapter = await chapter.reload();
+        // Recargar la instancia del capítulo para obtener los datos actualizados Y las asociaciones
+        const updatedChapter = await chapter.reload({
+            include: [
+                {
+                    model: Book,
+                    attributes: ['title', 'editionId'],
+                    include: [{ model: Edition, attributes: ['title'] }]
+                },
+                {
+                    model: User,
+                    attributes: ['id', 'firstName', 'email']
+                }
+            ]
+        });
+
 
         if (newStatus !== previousStatus && (newStatus === "aprobado" || newStatus === "rechazado")) {
-            const author = updatedChapter.User;
-            const book = updatedChapter.Book;
+            const author = updatedChapter.User; // Acceder a User desde la instancia recargada
+            const book = updatedChapter.Book;   // Acceder a Book desde la instancia recargada
             const edition = book?.Edition;
 
             if (author && author.email) {
@@ -131,9 +145,12 @@ export const updateOwnChapter = async (req, res) => {
                         });
                         console.log(`Correo enviado a ${author.email}`);
                     } catch (emailError) {
-                        console.error("Error al enviar correo:", emailError);
+                        // Log más detallado del error de SendGrid
+                        console.error("Error al enviar correo:", emailError.response?.body || emailError.message || emailError);
                     }
                 }
+            } else {
+                console.warn(`No se pudo enviar correo para el capítulo ${updatedChapter.id}: Falta autor o email del autor.`);
             }
         }
 
@@ -145,7 +162,7 @@ export const updateOwnChapter = async (req, res) => {
 };
 
 // Eliminar un capítulo propio
-export const deleteOwnChapter = async (req, res) => {
+const deleteOwnChapter = async (req, res) => {
     try {
         const { chapterId } = req.params;
         const chapter = await Chapter.findByPk(chapterId);
@@ -161,7 +178,7 @@ export const deleteOwnChapter = async (req, res) => {
 };
 
 // Listar compras de capítulos
-export const listChapterPurchases = async (req, res) => {
+const listChapterPurchases = async (req, res) => {
     try {
         const { userId } = req.query;
         if (!userId) {
@@ -173,4 +190,14 @@ export const listChapterPurchases = async (req, res) => {
         console.error("Error fetching chapter purchases:", err);
         res.status(500).json({ error: err.message });
     }
+};
+
+// Exportar todas las funciones para que puedan ser usadas en las rutas
+module.exports = {
+    getAllOwnChapters,
+    getOneOwnChapter,
+    createOwnChapter,
+    updateOwnChapter,
+    deleteOwnChapter,
+    listChapterPurchases,
 };

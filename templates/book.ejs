@@ -88,28 +88,61 @@
     <div class="page-break blank"></div>
 
     <!-- 3) Página de título y autores -->
-    <div class="center">
-      <h1><%= book.title %></h1>
-      <p>Fecha de publicación: <%= formatDate(issueDate) %></p>
-      <% if (coAuthors && coAuthors.length) { %>
-      <div class="authors">
-        Autores: <%= coAuthors .map(a => `${a.firstName} ${a.lastName}`)
-        .join(', ') .replace(/, ([^,]*)$/, ' y $1') %>
-      </div>
-      <% } %>
-      <div class="logo-row">
-        <% if (logoData) { %>
-        <img
-          src="data:image/png;base64,<%= logoData %>"
-          alt="Investiga Sanidad Logo" />
-        <% } %> <% if (socidesaLogoData) { %>
-        <img
-          src="data:image/png;base64,<%= socidesaLogoData %>"
-          alt="Logo SOCIDESA" />
+    <div class="page-break">
+      <div
+        style="
+          height: 60vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          align-items: center;
+          text-align: center;
+          padding: 0 2cm;
+        ">
+        <h1 style="font-size: 20pt; margin-bottom: 1.5cm">
+          <%= book.title.toUpperCase() %>
+        </h1>
+
+        <p style="font-weight: bold; margin-bottom: 0.5cm">
+          Fecha de publicación: <%= formatDate(issueDate) %>
+        </p>
+
+        <% if (coAuthors && coAuthors.length) { %>
+        <p
+          style="
+            font-weight: bold;
+            max-width: 80%;
+            line-height: 1.4;
+            margin-bottom: 2cm;
+          ">
+          Autores: <%= coAuthors.map(a => `${a.firstName}
+          ${a.lastName}`).join(', ').replace(/, ([^,]*)$/, ' y $1') %>
+        </p>
         <% } %>
+
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4cm;
+          ">
+          <% if (logoData) { %>
+          <img
+            src="data:image/png;base64,<%= logoData %>"
+            alt="Logo Investiga Sanidad"
+            style="max-height: 130px" />
+          <% } %> <% if (socidesaLogoData) { %>
+          <img
+            src="data:image/png;base64,<%= socidesaLogoData %>"
+            alt="Logo SOCIDESA"
+            style="max-height: 70px" />
+          <% } %>
+        </div>
       </div>
     </div>
-    <div class="page-break"></div>
+
+    <div class="page-break blank"></div>
 
     <!-- 5) Información editorial -->
     <div>
@@ -151,6 +184,7 @@
       <p>Producción editorial: Investiga Sanidad.</p>
     </div>
     <div class="page-break blank"></div>
+    <div class="page-break blank"></div>
 
     <!-- 7) Índice -->
     <div class="toc">
@@ -164,6 +198,7 @@
         <% }) %>
       </ul>
     </div>
+    <div class="page-break blank"></div>
     <div class="page-break blank"></div>
 
     <!-- 9) Capítulos -->

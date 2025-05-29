@@ -29,7 +29,7 @@ async function renderHtml(templateName, data) {
 /**
  * Genera el PDF para un certificado de capítulo
  */
-async function generateChapterCertificate({ user, book, chapter, issueDate, verifyHash }) {
+async function generateChapterCertificate({ user, book, chapter, issueDate, verifyHash, chapterCode, authors }) {
     const logoData = await loadLogoAsBase64("is.png");
     const socidesaLogoData = await loadLogoAsBase64("logo_socidesa.png");
     const signatureData = await loadLogoAsBase64("firma.png");
@@ -39,12 +39,14 @@ async function generateChapterCertificate({ user, book, chapter, issueDate, veri
         user,
         book,
         chapter,
+        authors, // ✅ aquí se pasa al template
         issueDate,
         logoData,
         socidesaLogoData,
         signatureData,
         verifyUrl,
-        formatDate
+        formatDate,
+        chapterCode
     });
 
     const pdfBuffer = await htmlToPdfBuffer(html);
@@ -62,6 +64,9 @@ async function generateBookCertificate({ user, book, coAuthors, issueDate, verif
     const signatureData = await loadLogoAsBase64("firma.png");
     const verifyUrl = buildVerifyUrl(verifyHash);
 
+    // Generar código EISMMYY
+    const bookCode = `${String(issueDate.getMonth() + 1).padStart(2, "0")}${String(issueDate.getFullYear()).slice(-2)}`;
+
     const html = await renderHtml("certificate-book.ejs", {
         user,
         book,
@@ -71,7 +76,8 @@ async function generateBookCertificate({ user, book, coAuthors, issueDate, verif
         socidesaLogoData,
         signatureData,
         verifyUrl,
-        formatDate
+        formatDate,
+        bookCode // <- lo pasamos al template
     });
 
     const pdfBuffer = await htmlToPdfBuffer(html);
@@ -80,13 +86,38 @@ async function generateBookCertificate({ user, book, coAuthors, issueDate, verif
     return { pdfBuffer, url };
 }
 
+
 /**
- * Función pública que decide qué tipo de certificado generar
+ * Decide qué tipo de certificado generar
  */
-exports.generateCertificatePdf = async function ({ type, user, book, chapter, coAuthors, issueDate, verifyHash }) {
+exports.generateCertificatePdf = async function ({
+    type,
+    user,
+    book,
+    chapter,
+    coAuthors,
+    issueDate,
+    verifyHash,
+    chapterCode,
+    authors // nuevo parámetro opcional
+}) {
     if (type === "book_author") {
-        return await generateBookCertificate({ type, user, book, chapter, coAuthors, issueDate, verifyHash });
+        return await generateBookCertificate({
+            user,
+            book,
+            coAuthors,
+            issueDate,
+            verifyHash
+        });
     } else {
-        return await generateChapterCertificate({ user, book, chapter, issueDate, verifyHash });
+        return await generateChapterCertificate({
+            user,
+            book,
+            chapter,
+            issueDate,
+            verifyHash,
+            chapterCode,
+            authors // ✅ pasar a capítulo
+        });
     }
 };

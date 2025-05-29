@@ -2,80 +2,95 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Certificado de autoría de libro</title>
+    <title>Certificado de autoría</title>
     <style>
       body {
-        font-family: "Calibri", Times, serif;
+        font-family: "Calibri", sans-serif;
         margin: 0;
         padding: 0;
       }
+
       .container {
-        padding: 0px 20px;
+        padding: 10px 20px;
         position: relative;
       }
+
       .logo {
         text-align: center;
-        margin: 0;
-        padding: 0;
+        margin-bottom: 10px;
       }
+
       .logo img {
         display: block;
         margin: 0 auto;
-        max-width: 200px;
+        max-width: 150px;
         height: auto;
       }
+
       h1 {
         text-align: center;
-        font-size: 32px;
+        font-size: 28px;
         margin: 0;
-        margin-bottom: 3rem;
+        margin-bottom: 1.5rem;
         color: #614195;
+        font-weight: bold;
       }
+
       .certificate-info {
-        margin: -20px 0 25px 0;
+        margin-top: -10px;
       }
+
       p,
       ul {
         font-size: 14px;
-        line-height: 1.6;
-        text-align: justify;
-        margin-bottom: 15px;
+        line-height: 1.4;
+        text-align: left;
+        margin-bottom: 12px;
       }
+
       ul {
         list-style: none;
         padding: 0;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
       }
+
       ul li {
         margin-left: 20px;
         margin-bottom: 5px;
       }
+
       .bottom-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 20px;
+        margin-top: 30px;
       }
+
       .sig-placeholder,
       .socidesa-logo {
         width: 150px;
         text-align: center;
         font-size: 12px;
       }
+
       .sig-placeholder {
         padding-top: 5px;
       }
+
       .qr {
         width: 100px;
       }
+
       .qr img {
         width: 100%;
         height: auto;
       }
+
       .footer {
         text-align: center;
         font-size: 12px;
         margin-top: 15px;
+        font-weight: bold;
       }
     </style>
   </head>
@@ -88,7 +103,9 @@
           alt="Investiga Sanidad Logo" />
       </div>
       <% } %>
-      <h1>Certificado de autoría de libro</h1>
+
+      <h1>Certificado de Autoría</h1>
+
       <div class="certificate-info">
         <p>
           La editorial <strong>Investiga Sanidad</strong> y la
@@ -101,44 +118,78 @@
           electrónico
           <strong><%= book.title %></strong> con ISBN
           <strong><%= book.isbn %></strong> publicado el
-          <strong><%= formatDate(book.publishDate) %></strong>.
+          <strong><%= formatDate(book.publishDate) %></strong>; y hacen constar
+          y certifican que los autores de este libro son las siguientes
+          personas:
         </p>
-        <p>
-          Por la presente hacen constar y certificar que los siguientes autores
-          han contribuido a esta obra:
-        </p>
+
         <ul>
-          <% coAuthors.forEach(author => { %>
+          <% if (coAuthors && coAuthors.length > 0) { %> <%
+          coAuthors.forEach(function(author) { %>
           <li>
-            <strong
-              >D./Dña. <%= author.firstName %> <%= author.lastName %></strong
-            >
-            con DNI/Pasaporte <strong><%= author.id %></strong>
+            - D/Dña.
+            <strong><%= author.firstName %> <%= author.lastName %></strong> con
+            DNI/Pasaporte <strong><%= author.dni || author.id %></strong>
           </li>
-          <% }) %>
+          <% }) %> <% } else { %>
+          <li>
+            - D/Dña.
+            <strong><%= user.firstName %> <%= user.lastName %></strong> con
+            DNI/Pasaporte <strong><%= user.dni || user.id %></strong>
+          </li>
+          <% } %>
         </ul>
+
+        <p>
+          Este trabajo ha sido reconocido con carácter científico, sometido a
+          evaluación por parte de un comité especializado en la temática y
+          verificado a través de herramientas informáticas de detección de
+          plagio. La obra ha sido incorporada en el registro documental de la
+          Sociedad con el código de referencia
+          <strong>EIS<%= bookCode %></strong>
+          , y dispone de un sistema de archivo permanente que garantiza su
+          accesibilidad a largo plazo.
+        </p>
+
+        <p>
+          La autenticidad de este certificado puede comprobarse de manera online
+          tanto en el QR de la parte inferior como en el siguiente enlace:
+          <a href="<%= verifyUrl %>"><%= verifyUrl %></a>
+        </p>
+
+        <p>
+          Para constancia de lo anterior y a efectos pertinentes, se emite la
+          presente certificación, con la aprobación del Presidente de la
+          Sociedad Científica de Desarrollo y Educación Sanitaria,
+          <strong>Víctor Pérez Cervantes</strong>.
+        </p>
       </div>
+
       <div class="bottom-row">
+        <div class="socidesa-logo">
+          <img
+            src="data:image/png;base64,<%= socidesaLogoData %>"
+            alt="Logo SOCIDESA"
+            style="max-width: 100%; height: auto" />
+        </div>
+
+        <div class="qr">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=<%= encodeURIComponent(verifyUrl) %>"
+            alt="QR Code" />
+        </div>
+
         <div class="sig-placeholder">
           <% if (signatureData) { %>
           <img
             src="data:image/png;base64,<%= signatureData %>"
             alt="Firma"
             style="max-width: 150px; height: auto" />
+          <div><strong>Víctor Pérez Cervantes</strong><br />23960931L</div>
           <% } else { %> (FIRMA) <% } %>
         </div>
-        <div class="qr">
-          <img
-            src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=<%= encodeURIComponent(verifyUrl) %>"
-            alt="QR Code" />
-        </div>
-        <div class="socidesa-logo">
-          <img
-            src="data:image/png;base64,<%= socidesaLogoData %>"
-            alt="Logo SOCIDESA"
-            style="max-width: 100px; height: auto" />
-        </div>
       </div>
+
       <div class="footer">Murcia, a <%= formatDate(issueDate) %></div>
     </div>
   </body>

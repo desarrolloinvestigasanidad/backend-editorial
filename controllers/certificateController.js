@@ -182,46 +182,7 @@ exports.generateCertificate = async (req, res) => {
 exports.getCertificatesByUser = async (req, res) => {
     try {
         const { userId } = req.params;
-        const certificatesData = await Certificate.findAll({
-            where: { userId },
-            include: [ // Incluir datos de Book y Chapter para obtener los títulos
-                {
-                    model: Book,
-                    as: 'book', // Asegúrate que esta 'as' coincida con tu definición en el modelo Certificate
-                    attributes: ['title'], // Solo necesitamos el título del libro
-                },
-                {
-                    model: Chapter,
-                    as: 'chapter', // Asegúrate que esta 'as' coincida con tu definición en el modelo Certificate
-                    attributes: ['title'], // Solo necesitamos el título del capítulo
-                }
-            ],
-            order: [['createdAt', 'DESC']] // Opcional: ordenar por fecha de creación
-        });
-
-        // Mapear los resultados para añadir bookTitle y chapterTitle al nivel superior del objeto
-        const certificates = certificatesData.map(cert => {
-            const plainCert = cert.get({ plain: true }); // Obtener el objeto plano
-
-            // Inicializar bookTitle y chapterTitle
-            let bookTitle = plainCert.book ? plainCert.book.title : null;
-            let chapterTitle = plainCert.chapter ? plainCert.chapter.title : null;
-
-            // Si no se encontró el título del libro directamente y hay un bookId en content,
-            // podrías hacer un segundo intento aquí, pero es mejor si la asociación lo resuelve.
-            // Por ahora, asumimos que la inclusión es suficiente.
-
-            return {
-                ...plainCert, // Mantener todos los campos originales del certificado
-                bookTitle,     // Añadir bookTitle explícitamente
-                chapterTitle,  // Añadir chapterTitle explícitamente
-                // No es necesario eliminar plainCert.book y plainCert.chapter si no molestan en el frontend,
-                // pero si quieres un objeto más limpio, puedes hacerlo.
-                book: undefined, // Opcional: limpiar el objeto book anidado
-                chapter: undefined // Opcional: limpiar el objeto chapter anidado
-            };
-        });
-
+        const certificates = await Certificate.findAll({ where: { userId } });
         res.status(200).json(certificates);
     } catch (err) {
         console.error("Error al obtener certificados por usuario:", err);

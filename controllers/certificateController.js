@@ -1,7 +1,5 @@
-const Certificate = require("../models/Certificate");
-const User = require("../models/User");
-const Book = require("../models/Book");
-const Chapter = require("../models/Chapter");
+const { Certificate, User, Book, Chapter } = require("../models");
+
 const crypto = require("crypto");
 
 const { generateCertificatePdf } = require("../services/certificateService");

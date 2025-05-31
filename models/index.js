@@ -4,13 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const Sequelize = require("sequelize");
 const basename = path.basename(__filename);
-
-// Requerimos directamente nuestro Sequelize instanciado
 const sequelize = require("../config/database");
 
 const db = {};
 
-// Cargar automáticamente todos los modelos del directorio actual
 fs.readdirSync(__dirname)
   .filter((file) => {
     return (
@@ -21,20 +18,40 @@ fs.readdirSync(__dirname)
     );
   })
   .forEach((file) => {
-    const model = require(path.join(__dirname, file))(
-      sequelize,
-      Sequelize.DataTypes
-    );
+    const imported = require(path.join(__dirname, file));
+
+    let model;
+
+    if (
+      typeof imported === "function" &&
+      Object.getPrototypeOf(imported).name === "Model"
+    ) {
+      // Es una clase que extiende Sequelize.Model y llama a init internamente
+      model = imported;
+      if (!model.sequelize) {
+        // Solo inicializa si no se ha hecho ya
+        model.init(model.definition(Sequelize.DataTypes), {
+          sequelize,
+          modelName: model.name,
+          ...model.options,
+        });
+      }
+    } else if (typeof imported === "function") {
+      // Es un modelo clásico exportado como función
+      model = imported(sequelize, Sequelize.DataTypes);
+    } else {
+      throw new Error(`❌ Modelo inválido: ${file}`);
+    }
+
     db[model.name] = model;
   });
 
 Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
+  if (typeof db[modelName].associate === "function") {
     db[modelName].associate(db);
   }
 });
 
-// Exponemos la instancia de Sequelize y todos los modelos
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 

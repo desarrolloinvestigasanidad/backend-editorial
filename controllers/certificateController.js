@@ -34,7 +34,7 @@ exports.generateCertificate = async (req, res) => {
         }
 
         const issueDate = new Date();
-        book.publishDate = issueDate; // <-- Forzar fecha de publicación a la fecha actual
+        book.publishDate = issueDate;
 
         const chapterCode = `${String(issueDate.getMonth() + 1).padStart(2, "0")}${String(issueDate.getFullYear()).slice(-2)}`;
         const verifyHash = crypto.randomBytes(16).toString("hex");
@@ -56,7 +56,6 @@ exports.generateCertificate = async (req, res) => {
                 return res.status(404).json({ message: `Autor del capítulo (ID: ${finalUserIdForCertificate}) no encontrado.` });
             }
 
-            // Combinar autor principal + coautores
             authors = [
                 {
                     name: `${userForCertificate.firstName} ${userForCertificate.lastName}`,
@@ -101,7 +100,7 @@ exports.generateCertificate = async (req, res) => {
             } else if (book.authorId) {
                 finalUserIdForCertificate = book.authorId;
             } else if (book.coAuthors && book.coAuthors.length > 0) {
-                finalUserIdForCertificate = book.coAuthors[0].id; // usar el primer coautor si no hay authorId
+                finalUserIdForCertificate = book.coAuthors[0].id;
             } else {
                 return res.status(400).json({ message: "No se puede determinar el autor del libro." });
             }
@@ -178,7 +177,7 @@ exports.generateCertificate = async (req, res) => {
     }
 };
 
-// Listar certificados de un usuario
+// ✅ Listar certificados de un usuario con títulos de libro y capítulo
 exports.getCertificatesByUser = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -188,20 +187,22 @@ exports.getCertificatesByUser = async (req, res) => {
             include: [
                 {
                     model: Book,
-                    attributes: ['title'],
+                    as: "book",
+                    attributes: ["title"],
                 },
                 {
                     model: Chapter,
-                    attributes: ['title'],
+                    as: "chapter",
+                    attributes: ["title"],
                 },
             ],
-            order: [['createdAt', 'DESC']],
+            order: [["createdAt", "DESC"]],
         });
 
         const enriched = certificates.map(cert => ({
             ...cert.toJSON(),
-            bookTitle: cert.Book?.title || null,
-            chapterTitle: cert.Chapter?.title || null,
+            bookTitle: cert.book?.title || null,
+            chapterTitle: cert.chapter?.title || null,
         }));
 
         res.status(200).json(enriched);
@@ -210,4 +211,3 @@ exports.getCertificatesByUser = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-

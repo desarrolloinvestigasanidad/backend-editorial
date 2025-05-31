@@ -182,10 +182,32 @@ exports.generateCertificate = async (req, res) => {
 exports.getCertificatesByUser = async (req, res) => {
     try {
         const { userId } = req.params;
-        const certificates = await Certificate.findAll({ where: { userId } });
-        res.status(200).json(certificates);
+
+        const certificates = await Certificate.findAll({
+            where: { userId },
+            include: [
+                {
+                    model: Book,
+                    attributes: ['title'],
+                },
+                {
+                    model: Chapter,
+                    attributes: ['title'],
+                },
+            ],
+            order: [['createdAt', 'DESC']],
+        });
+
+        const enriched = certificates.map(cert => ({
+            ...cert.toJSON(),
+            bookTitle: cert.Book?.title || null,
+            chapterTitle: cert.Chapter?.title || null,
+        }));
+
+        res.status(200).json(enriched);
     } catch (err) {
         console.error("Error al obtener certificados por usuario:", err);
         res.status(500).json({ error: err.message });
     }
 };
+

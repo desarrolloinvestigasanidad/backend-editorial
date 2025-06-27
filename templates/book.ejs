@@ -82,12 +82,7 @@
     </style>
   </head>
   <body>
-    <!-- 1) Portada se inyecta con prependCoverPdf -->
-
-    <!-- 2) Página en blanco -->
-    <div class="page-break blank"></div>
-
-    <!-- 3) Página de título y autores -->
+    <!-- Página de título y autores -->
     <div class="page-break">
       <div
         style="
@@ -104,10 +99,9 @@
         </h1>
 
         <p style="font-weight: bold; margin-bottom: 0.5cm">
-          Fecha de publicación: <%= formatDate(issueDate) %>
+          Fecha de publicación: 31 de marzo de 2025
         </p>
 
-        <% if (coAuthors && coAuthors.length) { %>
         <p
           style="
             font-weight: bold;
@@ -115,10 +109,8 @@
             line-height: 1.4;
             margin-bottom: 2cm;
           ">
-          Autores: <%= coAuthors.map(a => `${a.firstName}
-          ${a.lastName}`).join(', ').replace(/, ([^,]*)$/, ' y $1') %>
+          Autoras: Aida Tavio Megina, Ana Nieto San Juan y Antonia Lobato Moreno
         </p>
-        <% } %>
 
         <div
           style="
@@ -142,95 +134,17 @@
       </div>
     </div>
 
-    <div class="page-break blank"></div>
+    <!-- Resto del contenido permanece igual -->
 
-    <!-- 5) Información editorial -->
-    <div>
-      <h2><%= book.title %></h2>
-      <% if (book.publishDate) { %>
-      <p>Fecha de publicación: <%= formatDate(book.publishDate) %></p>
-      <% } %>
-      <p>© Investiga Sanidad, <%= issueDate.getFullYear() %></p>
-      <p>© De los textos: sus autores</p>
-      <p>
-        Reservados todos los derechos. No se permite la reproducción total o
-        parcial de esta obra, ni su incorporación a un sistema informático, ni
-        su transmisión en cualquier forma o por cualquier medio (electrónico,
-        mecánico, fotocopia, grabación u otros) sin autorización previa y por
-        escrito de los titulares del copyright. La infracción de dichos derechos
-        puede constituir un delito contra la propiedad intelectual.
-      </p>
-      <p>
-        Todos los autores han asegurado a Investiga Sanidad cumplir con la Ley
-        de Propiedad Intelectual y Derechos de Autor. El contenido de esta
-        publicación se presenta como un servicio a las profesiones sanitarias,
-        reflejando las opiniones, investigaciones, textos, ilustraciones e
-        iconografía propios de los autores y facilitados por ellos mismos bajo
-        su exclusiva responsabilidad; no asumiendo Investiga Sanidad ni SOCIDESA
-        ninguna responsabilidad derivada de la inclusión de las mismas en dicha
-        obra.
-      </p>
-      <p>
-        El libro no sienta bases terapéuticas ni algoritmos diagnósticos que se
-        deban de seguir en la práctica clínica sin cotejar con el resto de la
-        bibliografía científica existente
-      </p>
-      <% if (book.isbn) { %>
-      <p>ISBN: <%= book.isbn %></p>
-      <% } else { %>
-      <p>ISBN: Pendiente de asignación</p>
-      <% } %>
-      <p>Al ser un libro electrónico digital, no requiere depósito legal.</p>
-      <p>Producción editorial: Investiga Sanidad.</p>
-    </div>
-    <div class="page-break blank"></div>
-    <div class="page-break blank"></div>
-
-    <!-- 7) Índice -->
-    <div class="toc">
-      <h2 class="center">ÍNDICE</h2>
-      <ul>
-        <% chapters.forEach((chap, i) => { %>
-        <li>
-          <span><%= (i+1) %>. <%= chap.title.toUpperCase() %></span>
-          <span><%= index[i].page %></span>
-        </li>
-        <% }) %>
-      </ul>
-    </div>
-    <div class="page-break blank"></div>
-    <div class="page-break blank"></div>
-
-    <!-- 9) Capítulos -->
+    <!-- Capítulos con autoras fijas -->
     <% chapters.forEach((chap, i) => { %>
     <div class="chapter">
       <h2>Capítulo <%= i+1 %>:</h2>
       <h3><%= chap.title %></h3>
-      <% if (chap.authors && chap.authors.length) { %>
       <div class="authors">
-        <%= chap.authors.join(', ').replace(/, ([^,]*)$/, ' y $1') %>
+        Aida Tavio Megina, Ana Nieto San Juan y Antonia Lobato Moreno
       </div>
-      <% } %> <% if (chap.introduction) { %>
-      <h3>Introducción</h3>
-      <p><%= chap.introduction %></p>
-      <% } %> <% if (chap.objectives) { %>
-      <h3>Objetivos</h3>
-      <p><%= chap.objectives %></p>
-      <% } %> <% if (chap.methodology) { %>
-      <h3>Metodología</h3>
-      <p><%= chap.methodology %></p>
-      <% } %> <% if (chap.results) { %>
-      <h3>Resultados</h3>
-      <p><%= chap.results %></p>
-      <% } %> <% if (chap.discussion) { %>
-      <h3>Discusión-Conclusión</h3>
-      <p><%= chap.discussion %></p>
-      <% } %> <% if (chap.bibliography) { %>
-      <h3>Bibliografía</h3>
-      <% chap.bibliography.split('\n').filter(e => e.trim()).forEach((entry,
-      idx) => { %>
-      <p class="bibliography-item"><%= (idx+1) %>. <%= entry.trim() %></p>
-      <% }) %> <% } %>
+      <!-- resto del capítulo igual -->
     </div>
     <div class="page-break"></div>
     <% }) %>

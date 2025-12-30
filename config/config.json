@@ -14,11 +14,24 @@
     "dialect": "mysql"
   },
   "production": {
+    "use_env_variable": false,
     "username": "admin",
     "password": "investigasanidad",
     "database": "editorial",
     "host": "investigasanidad.cfoku84g0zdj.eu-west-2.rds.amazonaws.com",
     "port": 3306,
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
+    "pool": {
+      "max": 10,
+      "min": 0,
+      "acquire": 30000,
+      "idle": 10000
+    }
   }
 }

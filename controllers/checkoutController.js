@@ -5,6 +5,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
     : null;
 
 const Book = require("../models/Book");
+const Payment = require("../models/Payment");
 const { v4: uuidv4 } = require("uuid");
 
 // Variable para saber si Stripe está habilitado
@@ -47,6 +48,19 @@ exports.createCheckoutSession = async (req, res) => {
                 active: true,
                 price: amount / 100, // Convertir de céntimos a euros
             });
+
+            // Crear el pago simulado para que el sidebar muestre las opciones
+            const amountInEuros = amount / 100;
+            await Payment.create({
+                userId: userId,
+                amount: amountInEuros,
+                method: "simulated",
+                status: "completed",
+                paymentDate: new Date(),
+                subtotalOwnBook: amountInEuros,
+                paidAmount: amountInEuros,
+            });
+            console.log('Pago simulado creado para usuario:', userId, 'cantidad:', amountInEuros);
 
             // Generar un sessionId simulado
             const fakeSessionId = `sim_${uuidv4()}`;

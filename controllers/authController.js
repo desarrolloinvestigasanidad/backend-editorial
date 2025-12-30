@@ -8,7 +8,17 @@ const jwt = require("jsonwebtoken");
 const sendgrid = require("@sendgrid/mail");
 const User = require("../models/User");
 
-sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
+// Configurar SendGrid solo si hay API key válida
+const SENDGRID_ENABLED = process.env.SENDGRID_API_KEY &&
+    process.env.SENDGRID_API_KEY.startsWith('SG.') &&
+    process.env.SENDGRID_FROM_EMAIL;
+
+if (SENDGRID_ENABLED) {
+    sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log('SendGrid configurado correctamente');
+} else {
+    console.log('SendGrid no configurado - emails deshabilitados, usuarios se verificarán automáticamente');
+}
 
 // --- TEMPLATES DE CORREO -------------------------------------------------
 
@@ -77,32 +87,40 @@ exports.register = async (req, res) => {
             infoAccepted: infoAccepted === true,
             deviceIp,
             state: "active",
-            verified: false,
+            verified: !SENDGRID_ENABLED, // Auto-verificar si no hay SendGrid
             roleId: 2
         });
 
-        // Envío del correo de validación
+        // Envío del correo de validación solo si SendGrid está configurado
         const token = jwt.sign(
             { sub: newUser.id, roleId: newUser.roleId },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
-        const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-        const validationEmail = getValidationEmailTemplate(firstName, verifyUrl);
 
-        await sendgrid.send({
-            to: email,
-            from: {
-                email: process.env.SENDGRID_FROM_EMAIL,
-                name: "Investiga Sanidad"
-            },
-            subject: validationEmail.subject,
-            html: validationEmail.html
-        });
+        if (SENDGRID_ENABLED) {
+            const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+            const validationEmail = getValidationEmailTemplate(firstName, verifyUrl);
 
-        res
-            .status(201)
-            .json({ message: "Usuario registrado. Verifique su email.", token });
+            await sendgrid.send({
+                to: email,
+                from: {
+                    email: process.env.SENDGRID_FROM_EMAIL,
+                    name: "Investiga Sanidad"
+                },
+                subject: validationEmail.subject,
+                html: validationEmail.html
+            });
+
+            res
+                .status(201)
+                .json({ message: "Usuario registrado. Verifique su email.", token });
+        } else {
+            // Sin SendGrid, el usuario ya está verificado
+            res
+                .status(201)
+                .json({ message: "Usuario registrado correctamente. Ya puede iniciar sesión.", token });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -135,19 +153,21 @@ exports.verifyEmail = async (req, res) => {
     user.verified = true;
     await user.save();
 
-    // Envío del correo de bienvenida
-    const loginUrl = `${process.env.FRONTEND_URL}/login`;
-    const welcomeEmail = getWelcomeEmailTemplate(user.firstName, loginUrl);
+    // Envío del correo de bienvenida solo si SendGrid está configurado
+    if (SENDGRID_ENABLED) {
+        const loginUrl = `${process.env.FRONTEND_URL}/login`;
+        const welcomeEmail = getWelcomeEmailTemplate(user.firstName, loginUrl);
 
-    await sendgrid.send({
-        to: user.email,
-        from: {
-            email: process.env.SENDGRID_FROM_EMAIL,
-            name: "Investiga Sanidad"
-        },
-        subject: welcomeEmail.subject,
-        html: welcomeEmail.html
-    });
+        await sendgrid.send({
+            to: user.email,
+            from: {
+                email: process.env.SENDGRID_FROM_EMAIL,
+                name: "Investiga Sanidad"
+            },
+            subject: welcomeEmail.subject,
+            html: welcomeEmail.html
+        });
+    }
 
     res
         .status(200)
@@ -242,6 +262,10 @@ exports.handlePasswordReset = async (req, res) => {
         if (id) {
             const user = await User.findOne({ where: { id } });
             if (!user) return res.status(404).json({ message: "Usuario no encontrado." });
+
+            if (!SENDGRID_ENABLED) {
+                return res.status(503).json({ message: "El servicio de correo no está configurado. Contacte al administrador." });
+            }
 
             const resetToken = jwt.sign(
                 { id: user.id },

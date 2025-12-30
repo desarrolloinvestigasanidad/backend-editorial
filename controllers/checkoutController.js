@@ -4,15 +4,14 @@ const stripe = process.env.STRIPE_SECRET_KEY
     ? require("stripe")(process.env.STRIPE_SECRET_KEY)
     : null;
 
+const Book = require("../models/Book");
+const { v4: uuidv4 } = require("uuid");
+
+// Variable para saber si Stripe está habilitado
+const STRIPE_ENABLED = !!stripe;
+
 exports.createCheckoutSession = async (req, res) => {
     try {
-        // Verificar si Stripe está configurado
-        if (!stripe) {
-            return res.status(503).json({
-                error: "Stripe no está configurado. Contacte al administrador."
-            });
-        }
-
         // Desestructuramos las propiedades del body y también de metadata
         const {
             userId,
@@ -33,6 +32,29 @@ exports.createCheckoutSession = async (req, res) => {
             return res
                 .status(400)
                 .json({ message: "Faltan datos requeridos (userId, bookTitle, amount)" });
+        }
+
+        // Si Stripe NO está configurado, simular el pago y crear el libro directamente
+        if (!STRIPE_ENABLED) {
+            console.log('Stripe no configurado - simulando pago exitoso para:', bookTitle);
+            
+            // Crear el libro directamente
+            const newBook = await Book.create({
+                title: bookTitle,
+                authorId: userId,
+                bookType: "libro propio",
+                status: "borrador",
+                active: true,
+                price: amount / 100, // Convertir de céntimos a euros
+            });
+
+            // Generar un sessionId simulado
+            const fakeSessionId = `sim_${uuidv4()}`;
+            
+            // Redirigir a success con el sessionId simulado
+            const successUrl = `${process.env.FRONTEND_URL}/success?session_id=${fakeSessionId}&simulated=true&bookId=${newBook.id}`;
+            
+            return res.status(200).json({ url: successUrl });
         }
 
         // Determinamos el nombre del producto según si se envían chapterCount y editionId
@@ -81,6 +103,25 @@ exports.getCheckoutSession = async (req, res) => {
     if (!sessionId) {
         return res.status(400).json({ message: "Falta sessionId" });
     }
+    
+    // Si es una sesión simulada, devolver datos simulados
+    if (sessionId.startsWith('sim_')) {
+        return res.status(200).json({ 
+            session: {
+                id: sessionId,
+                payment_status: 'paid',
+                status: 'complete',
+                metadata: {},
+                simulated: true
+            }
+        });
+    }
+    
+    // Si Stripe no está configurado y no es simulada, error
+    if (!stripe) {
+        return res.status(503).json({ error: "Stripe no está configurado." });
+    }
+    
     try {
         const session = await stripe.checkout.sessions.retrieve(sessionId);
         res.status(200).json({ session });

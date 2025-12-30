@@ -1,8 +1,18 @@
 // controllers/checkoutController.js
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+// Stripe es opcional - solo se inicializa si hay API key
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? require("stripe")(process.env.STRIPE_SECRET_KEY)
+    : null;
 
 exports.createCheckoutSession = async (req, res) => {
     try {
+        // Verificar si Stripe está configurado
+        if (!stripe) {
+            return res.status(503).json({
+                error: "Stripe no está configurado. Contacte al administrador."
+            });
+        }
+
         // Desestructuramos las propiedades del body y también de metadata
         const {
             userId,

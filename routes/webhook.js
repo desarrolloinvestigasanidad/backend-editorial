@@ -1,7 +1,12 @@
 // routes/webhook.js
 const express = require("express");
 const router = express.Router();
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+// Stripe es opcional - solo se inicializa si hay API key
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? require("stripe")(process.env.STRIPE_SECRET_KEY)
+    : null;
+
 const sendgrid = require("@sendgrid/mail");
 
 const Payment = require("../models/Payment");
@@ -15,8 +20,10 @@ const {
     getBookPaymentEmailTemplate
 } = require("../templates/emailTemplates");
 
-// Configuramos SendGrid
-sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
+// Configuramos SendGrid solo si hay API key
+if (process.env.SENDGRID_API_KEY) {
+    sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 // Helpers para compras de capítulos
 async function getPurchasedChapters(userId, editionId) {

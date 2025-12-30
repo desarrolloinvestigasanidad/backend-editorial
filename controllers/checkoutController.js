@@ -35,38 +35,61 @@ exports.createCheckoutSession = async (req, res) => {
                 .json({ message: "Faltan datos requeridos (userId, bookTitle, amount)" });
         }
 
-        // Si Stripe NO está configurado, simular el pago y crear el libro directamente
+        // Si Stripe NO está configurado, simular el pago
         if (!STRIPE_ENABLED) {
-            console.log('Stripe no configurado - simulando pago exitoso para:', bookTitle);
-
-            // Crear el libro directamente
-            const newBook = await Book.create({
-                title: bookTitle,
-                authorId: userId,
-                bookType: "libro propio",
-                status: "borrador",
-                active: true,
-                price: amount / 100, // Convertir de céntimos a euros
-            });
-
-            // Crear el pago simulado para que el sidebar muestre las opciones
             const amountInEuros = amount / 100;
-            await Payment.create({
+            const isChapterPurchase = chapterCount && editionId;
+
+            console.log('Stripe no configurado - simulando pago exitoso');
+            console.log('Tipo:', isChapterPurchase ? 'Compra de capítulos' : 'Libro propio');
+            console.log('Usuario:', userId, 'Cantidad:', amountInEuros, '€');
+
+            let newBookId = bookId;
+
+            // Solo crear libro si es compra de libro propio (no capítulos)
+            if (!isChapterPurchase) {
+                const newBook = await Book.create({
+                    title: bookTitle,
+                    authorId: userId,
+                    bookType: "libro propio",
+                    status: "borrador",
+                    active: true,
+                    price: amountInEuros,
+                });
+                newBookId = newBook.id;
+            }
+
+            // Crear el pago simulado
+            const paymentData = {
                 userId: userId,
                 amount: amountInEuros,
                 method: "simulated",
                 status: "completed",
                 paymentDate: new Date(),
-                subtotalOwnBook: amountInEuros,
                 paidAmount: amountInEuros,
-            });
-            console.log('Pago simulado creado para usuario:', userId, 'cantidad:', amountInEuros);
+            };
+
+            // Asignar subtotales según el tipo de compra
+            if (isChapterPurchase) {
+                paymentData.subtotalChapterEdition = amountInEuros;
+            } else {
+                paymentData.subtotalOwnBook = amountInEuros;
+            }
+
+            await Payment.create(paymentData);
+            console.log('Pago simulado creado para usuario:', userId);
 
             // Generar un sessionId simulado
             const fakeSessionId = `sim_${uuidv4()}`;
 
             // Redirigir a success con el sessionId simulado
-            const successUrl = `${process.env.FRONTEND_URL}/success?session_id=${fakeSessionId}&simulated=true&bookId=${newBook.id}`;
+            let successUrl = `${process.env.FRONTEND_URL}/success?session_id=${fakeSessionId}&simulated=true`;
+            if (newBookId) {
+                successUrl += `&bookId=${newBookId}`;
+            }
+            if (isChapterPurchase) {
+                successUrl += `&chapterCount=${chapterCount}&editionId=${editionId}`;
+            }
 
             return res.status(200).json({ url: successUrl });
         }
